@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #F19001;
+  --color-accent: #F19001;
+  --color-border: #E5E7EB;
+  --color-background: #F3F4F6;
+  --color-text-primary: #005897;
+  --color-link: #005897;
+  --font-sans: "Montserrat", sans-serif;
+  --font-heading: "Montserrat", sans-serif;
+  --font-body: "Montserrat", sans-serif;
+  --font-paragraph: "Montserrat", sans-serif;
+}
+
+/* Glassmorphism utility */
+@utility glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+@utility bg-gradient-brand {
+  background: linear-gradient(135deg, #005897 0%, #003666 100%);
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary font-body antialiased;
+  }
+}

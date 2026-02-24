@@ -1,0 +1,245 @@
+{
+  "data": {
+    "branding": {
+      "colorScheme": "light",
+      "fonts": [
+        {
+          "family": "Montserrat",
+          "role": "body"
+        }
+      ],
+      "colors": {
+        "primary": "#F19001",
+        "accent": "#F19001",
+        "background": "#FFFFFF",
+        "textPrimary": "#005897",
+        "link": "#005897"
+      },
+      "typography": {
+        "fontFamilies": {
+          "primary": "Montserrat",
+          "heading": "Montserrat"
+        },
+        "fontStacks": {
+          "heading": [
+            "Montserrat",
+            "sans-serif"
+          ],
+          "body": [
+            "Montserrat",
+            "sans-serif"
+          ],
+          "paragraph": [
+            "Montserrat",
+            "sans-serif"
+          ]
+        },
+        "fontSizes": {
+          "h1": "60px",
+          "h2": "36px",
+          "body": "20px"
+        }
+      },
+      "spacing": {
+        "baseUnit": 4,
+        "borderRadius": "6px"
+      },
+      "components": {
+        "buttonPrimary": {
+          "background": "#F19001",
+          "textColor": "#FFFFFF",
+          "borderRadius": "8px",
+          "borderRadiusCorners": {
+            "topLeft": "8px",
+            "topRight": "8px",
+            "bottomRight": "8px",
+            "bottomLeft": "8px"
+          },
+          "shadow": "none"
+        },
+        "buttonSecondary": {
+          "background": "#FFFFFF",
+          "textColor": "#F19001",
+          "borderRadius": "8px",
+          "borderRadiusCorners": {
+            "topLeft": "8px",
+            "topRight": "8px",
+            "bottomRight": "8px",
+            "bottomLeft": "8px"
+          },
+          "shadow": "none"
+        }
+      },
+      "images": {
+        "logo": "https://gtf-sap-repo.s3.us-east-1.amazonaws.com/images/l1nx/logo2-L1NX-azulnaranja%2B(2).png",
+        "favicon": "https://gtf-sap-repo.s3.us-east-1.amazonaws.com/images/l1nx/logo2-X-naranja-_1_+.ico",
+        "ogImage": "https://gtf-sap-repo.s3.us-east-1.amazonaws.com/images/l1nx/logo2-L1NX-azulnaranja+(2).png",
+        "logoHref": "/",
+        "logoAlt": "LINX"
+      },
+      "__llm_logo_reasoning": {
+        "selectedIndex": 0,
+        "reasoning": "Selected #0 because it is visible, located in the header, links to the homepage, and matches the brand inferred from the URL and page title.",
+        "confidence": 0.9,
+        "source": "llm"
+      },
+      "__llm_button_reasoning": {
+        "primary": {
+          "index": 0,
+          "text": "Contacta con un asesor",
+          "reasoning": "Button #0 ('Contacta con un asesor') uses the brand's vibrant orange color (#F19001) and has action-oriented text, making it the primary CTA."
+        },
+        "secondary": {
+          "index": 3,
+          "text": "Solicitar una consultoría",
+          "reasoning": "Button #3 ('Solicitar una consultoría') has a different background color (#FFFFFF) and serves as a secondary action with a less prominent style."
+        },
+        "confidence": 0.95
+      },
+      "personality": {
+        "tone": "professional",
+        "energy": "medium",
+        "targetAudience": "business professionals seeking digital transformation solutions"
+      },
+      "designSystem": {
+        "framework": "tailwind",
+        "componentLibrary": ""
+      },
+      "confidence": {
+        "buttons": 0.95,
+        "colors": 0.9,
+        "overall": 0.925
+      },
+      "__llm_metadata": {
+        "logoSelection": {
+          "llmCalled": true,
+          "llmSucceeded": true,
+          "finalSource": "llm",
+          "rawLogoSelection": {
+            "selectedLogoIndex": 0,
+            "selectedLogoReasoning": "Selected #0 because it is visible, located in the header, links to the homepage, and matches the brand inferred from the URL and page title.",
+            "confidence": 0.9
+          }
+        },
+        "buttonClassification": {
+          "llmCalled": true,
+          "llmSucceeded": true
+        }
+      }
+    },
+    "metadata": {
+      "description": "Expertos en señalización digital, gestión de contenidos, Lift & Learn y soluciones Cloud para potenciar la experiencia de tus clientes.",
+      "og:title": "LINX - Soluciones Digitales para Empresas",
+      "twitter:title": "LINX - Soluciones Digitales para Empresas",
+      "ogTitle": "LINX - Soluciones Digitales para Empresas",
+      "og:image": "https://gtf-sap-repo.s3.us-east-1.amazonaws.com/images/l1nx/logo2-L1NX-azulnaranja+(2).png",
+      "ogImage": "https://gtf-sap-repo.s3.us-east-1.amazonaws.com/images/l1nx/logo2-L1NX-azulnaranja+(2).png",
+      "twitter:card": "summary_large_image",
+      "og:url": "https://l1nx.cl/",
+      "ogDescription": "Transformamos espacios con tecnología de vanguardia para crear experiencias digitales únicas. Señalización digital, automatización y soluciones cloud.",
+      "twitter:image": "https://gtf-sap-repo.s3.us-east-1.amazonaws.com/images/l1nx/logo2-L1NX-azulnaranja+(2).png",
+      "language": "es",
+      "title": "GTF Solutions | Transformación Digital y Experiencia de Cliente",
+      "keywords": [
+        "digital signage, cloud, customer experience, gtf, tecnología, retail",
+        "señalización digital, digital signage, automatización, cloud computing, AWS, experiencia de cliente, productividad empresarial, LINX, tecnología empresarial"
+      ],
+      "og:description": "Transformamos espacios con tecnología de vanguardia para crear experiencias digitales únicas. Señalización digital, automatización y soluciones cloud.",
+      "twitter:description": "Transformamos espacios con tecnología de vanguardia para crear experiencias digitales únicas. Señalización digital, automatización y soluciones cloud.",
+      "og:type": "website",
+      "ogUrl": "https://l1nx.cl/",
+      "viewport": "width=device-width, initial-scale=1.0",
+      "twitter:url": "https://l1nx.cl/",
+      "favicon": "https://gtf-sap-repo.s3.us-east-1.amazonaws.com/images/l1nx/logo2-X-naranja-_1_+.ico",
+      "scrapeId": "019c9008-d366-72bd-97e4-d20b6a2d3192",
+      "sourceURL": "https://linx-group.com/",
+      "url": "https://linx-group.com/",
+      "statusCode": 200,
+      "contentType": "text/html; charset=utf-8",
+      "timezone": "America/New_York",
+      "proxyUsed": "basic",
+      "indexId": "a2b4171a-1564-4a5a-b265-eb4f6e1dc959",
+      "creditsUsed": 1,
+      "concurrencyLimited": false
+    }
+  },
+  "scrape_id": "019c9008-d366-72bd-97e4-d20b6a2d3192",
+  "id": "_M863sB2NnPpP7EBXWnbH",
+  "startedAt": "2026-02-24T14:23:43.347Z",
+  "endedAt": "2026-02-24T14:23:51.413Z",
+  "endpoint": "scrape",
+  "formState": {
+    "extractSetupCompleted": false,
+    "urls": [],
+    "extractSchema": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "company_mission": {
+          "type": "string"
+        },
+        "supports_sso": {
+          "type": "boolean"
+        },
+        "is_open_source": {
+          "type": "boolean"
+        },
+        "is_in_yc": {
+          "type": "boolean"
+        }
+      }
+    },
+    "extractPrompt": "Extract the company details, following the schema.",
+    "enableWebSearch": false,
+    "constrainUrls": false,
+    "options": {
+      "onlyMainContent": false,
+      "parsePDF": true,
+      "stealthMode": false,
+      "excludeTags": [],
+      "includeTags": [],
+      "waitFor": "",
+      "timeout": "",
+      "maxAge": "2 days",
+      "ignoreSitemap": false,
+      "crawlEntireDomain": false,
+      "sitemap": "include",
+      "limit": "10",
+      "maxDepth": "",
+      "excludePaths": [],
+      "includePaths": [],
+      "includeSubdomains": false,
+      "search": "",
+      "scrapeContentFromSearchResults": true,
+      "timeBasedSearch": "",
+      "location": "",
+      "prompt": ""
+    },
+    "formats": [
+      "branding"
+    ],
+    "sources": [
+      "web"
+    ],
+    "categories": [],
+    "jsonSchema": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "company_name": {
+          "type": "string"
+        },
+        "company_description": {
+          "type": "string"
+        }
+      }
+    },
+    "jsonPrompt": "",
+    "agent": {},
+    "url": "linx-group.com/",
+    "endpoint": "scrape"
+  },
+  "status": "success",
+  "version": "9Lq7887cH9dOKl-UIiM7S",
+  "isPreview": false
+}
