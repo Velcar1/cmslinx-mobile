@@ -1,149 +1,159 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, Link as LinkIcon, AlertCircle, CheckCircle2, MonitorSmartphone, Hash } from 'lucide-react';
+import { Loader2, Link as LinkIcon, CheckCircle2, AlertCircle, Smartphone, Folder } from 'lucide-react';
 import { pb } from '../lib/pocketbase';
 
-interface DeviceForm {
+interface RegistrationInputs {
     pairing_code: string;
+    name: string;
+    group: string;
+}
+
+interface DeviceGroup {
+    id: string;
     name: string;
 }
 
 export default function DeviceRegistration() {
-    const [isLinking, setIsLinking] = useState(false);
+    const [groups, setGroups] = useState<DeviceGroup[]>([]);
+    const [isRegistering, setIsRegistering] = useState(false);
     const [errorStatus, setErrorStatus] = useState<string | null>(null);
     const [successStatus, setSuccessStatus] = useState<string | null>(null);
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<DeviceForm>();
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<RegistrationInputs>();
 
-    const onSubmit = async (data: DeviceForm) => {
-        setIsLinking(true);
+    useEffect(() => {
+        const fetchGroups = async () => {
+            try {
+                const records = await pb.collection('device_groups').getFullList<DeviceGroup>();
+                setGroups(records);
+            } catch (err) {
+                console.error("Error fetching groups:", err);
+            }
+        };
+        fetchGroups();
+    }, []);
+
+    const onSubmit = async (data: RegistrationInputs) => {
+        setIsRegistering(true);
         setErrorStatus(null);
         setSuccessStatus(null);
 
         try {
             const cleanCode = data.pairing_code.trim().toUpperCase();
 
-            // Find the device by pairing_code
             const records = await pb.collection('devices').getList(1, 1, {
                 filter: `pairing_code = "${cleanCode}"`,
             });
 
             if (records.items.length === 0) {
-                throw new Error("El código de vinculación es incorrecto o no existe.");
+                throw new Error("Código no encontrado. Asegúrate de que la PWA está mostrando ese código.");
             }
 
             const device = records.items[0];
 
             if (device.is_registered) {
-                throw new Error("Este dispositivo ya ha sido registrado.");
+                throw new Error("Este código ya ha sido utilizado para registrar un dispositivo.");
             }
 
-            // Update the device to mark it as registered
             await pb.collection('devices').update(device.id, {
                 name: data.name,
+                group: data.group,
                 is_registered: true
             });
 
             setSuccessStatus(`¡Dispositivo "${data.name}" vinculado exitosamente!`);
-            reset(); // clear the form
+            reset();
         } catch (err: any) {
-            setErrorStatus(err.message || "Ocurrió un error al vincular el dispositivo.");
-            console.error(err);
+            setErrorStatus(err.message || "Error al vincular el dispositivo.");
         } finally {
-            setIsLinking(false);
+            setIsRegistering(false);
         }
     };
 
     return (
-        <div className="flex flex-col items-center mb-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col items-center mb-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-md">
-                Vincular Dispositivo
+                Vincular Nueva Pantalla
             </h1>
-            <p className="text-blue-100 max-w-2xl text-lg opacity-90 mx-auto mb-8">
-                Ingrese el código numérico o alfanumérico que aparece en la pantalla de su PWA para emparejarlo a este panel.
+            <p className="text-blue-100 max-w-2xl text-lg opacity-90 mx-auto mb-10">
+                Ingrese el código que aparece en su dispositivo PWA para autorizarlo y asignarlo a un grupo.
             </p>
 
-            <div className="bg-white/80 p-8 rounded-2xl glass w-full max-w-xl mx-auto flex flex-col gap-6 relative z-10 text-left">
-
-                {errorStatus && (
-                    <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 border border-red-200">
-                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                        <p className="text-sm font-medium">{errorStatus}</p>
+            <div className="w-full max-w-xl mx-auto space-y-6">
+                <div className="bg-white/80 p-8 rounded-2xl glass text-left relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Smartphone className="w-24 h-24 text-slate-900" />
                     </div>
-                )}
 
-                {successStatus && (
-                    <div className="bg-green-50 text-green-700 p-4 rounded-xl flex items-center gap-3 border border-green-200">
-                        <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                        <p className="text-sm font-medium">{successStatus}</p>
-                    </div>
-                )}
-
-                <div>
-                    <h2 className="text-xl font-semibold text-text-primary">Datos del Dispositivo</h2>
-                    <p className="text-slate-500 text-sm mt-1">Completa los datos para identificar esta pantalla en la red.</p>
-                </div>
-
-                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 mt-2">
-
-                    {/* Pairing Code */}
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="pairing_code" className="text-sm font-semibold text-text-primary ml-1 flex items-center gap-2">
-                            Código de Emparejamiento
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                <Hash className="h-5 w-5" />
-                            </div>
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-text-primary flex items-center gap-2 uppercase tracking-wide">
+                                <LinkIcon className="w-4 h-4 text-primary" /> Código de Vinculación
+                            </label>
                             <input
-                                id="pairing_code"
                                 type="text"
-                                placeholder="Ej: A49XY2"
-                                className={`w-full bg-slate-50 border ${errors.pairing_code ? 'border-red-400 ring-1 ring-red-400' : 'border-border focus:border-primary focus:ring-1 focus:ring-primary'} rounded-xl py-3 pl-11 pr-4 text-slate-800 placeholder-slate-400 uppercase transition-all outline-none block`}
-                                {...register("pairing_code", {
-                                    required: "El código es obligatorio.",
-                                    pattern: {
-                                        value: /^[A-Za-z0-9]+$/,
-                                        message: "El código solo puede contener letras y números."
-                                    }
-                                })}
+                                maxLength={6}
+                                placeholder="ABC123"
+                                className="w-full bg-slate-100 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-4 px-5 text-2xl font-mono font-bold text-center tracking-widest text-slate-800 outline-none uppercase"
+                                {...register("pairing_code", { required: "Código requerido" })}
                             />
+                            {errors.pairing_code && <p className="text-red-500 text-xs font-medium">{errors.pairing_code.message}</p>}
                         </div>
-                        {errors.pairing_code && <span className="text-xs text-red-500 ml-1">{errors.pairing_code.message}</span>}
-                    </div>
 
-                    {/* Name */}
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="name" className="text-sm font-semibold text-text-primary ml-1 flex items-center gap-2">
-                            Nombre del Dispositivo
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                <MonitorSmartphone className="h-5 w-5" />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-text-primary uppercase tracking-wide">
+                                Nombre del Dispositivo
+                            </label>
                             <input
-                                id="name"
                                 type="text"
-                                placeholder="Ej: Pantalla Lobby Principal"
-                                className={`w-full bg-slate-50 border ${errors.name ? 'border-red-400 ring-1 ring-red-400' : 'border-border focus:border-primary focus:ring-1 focus:ring-primary'} rounded-xl py-3 pl-11 pr-4 text-slate-800 placeholder-slate-400 transition-all outline-none block`}
-                                {...register("name", { required: "Debe asignarle un nombre al dispositivo." })}
+                                placeholder="Ej: Pantalla Recepción"
+                                className="w-full bg-slate-50 border border-slate-200 focus:border-primary rounded-xl py-3 px-4 text-slate-800 outline-none"
+                                {...register("name", { required: "Nombre requerido" })}
                             />
+                            {errors.name && <p className="text-red-500 text-xs font-medium">{errors.name.message}</p>}
                         </div>
-                        {errors.name && <span className="text-xs text-red-500 ml-1">{errors.name.message}</span>}
-                    </div>
 
-                    <div className="flex justify-end pt-4 border-t border-slate-100 mt-2">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-text-primary flex items-center gap-2 uppercase tracking-wide">
+                                <Folder className="w-4 h-4 text-primary" /> Asignar a Grupo
+                            </label>
+                            <select
+                                className="w-full bg-slate-50 border border-slate-200 focus:border-primary rounded-xl py-3 px-4 text-slate-800 outline-none cursor-pointer"
+                                {...register("group", { required: "Seleccione un grupo" })}
+                            >
+                                <option value="">Seleccione...</option>
+                                {groups.map(g => (
+                                    <option key={g.id} value={g.id}>{g.name}</option>
+                                ))}
+                            </select>
+                            {errors.group && <p className="text-red-500 text-xs font-medium">{errors.group.message}</p>}
+                        </div>
+
+                        {errorStatus && (
+                            <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-200">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                <p className="text-sm font-medium">{errorStatus}</p>
+                            </div>
+                        )}
+
+                        {successStatus && (
+                            <div className="bg-green-50 text-green-700 p-4 rounded-xl flex items-center gap-3 border border-green-200">
+                                <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                                <p className="text-sm font-medium">{successStatus}</p>
+                            </div>
+                        )}
+
                         <button
                             type="submit"
-                            disabled={isLinking}
-                            className="bg-primary hover:bg-[#D98201] text-white py-3 px-8 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-70 shadow-sm"
+                            disabled={isRegistering}
+                            className="w-full bg-primary hover:bg-[#D98201] text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-3 transition-all disabled:opacity-50 uppercase tracking-wider"
                         >
-                            {isLinking ? <Loader2 className="w-5 h-5 animate-spin" /> : <LinkIcon className="w-5 h-5" />}
-                            Vincular Pantalla
+                            {isRegistering ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
+                            {isRegistering ? "Vinculando..." : "Vincular Dispositivo"}
                         </button>
-                    </div>
-                </form>
-
+                    </form>
+                </div>
             </div>
         </div>
     );

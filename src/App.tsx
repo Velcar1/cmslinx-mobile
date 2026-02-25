@@ -3,6 +3,7 @@ import Navigation from './components/Navigation';
 import DashboardHome from './pages/DashboardHome';
 import DeviceRegistration from './pages/DeviceRegistration';
 import DeviceList from './pages/DeviceList';
+import GroupManagement from './pages/GroupManagement';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 relative z-10 w-full">
           <Routes>
             <Route path="/" element={<DashboardHome />} />
+            <Route path="/groups" element={<GroupManagement />} />
             <Route path="/devices/register" element={<DeviceRegistration />} />
             <Route path="/devices" element={<DeviceList />} />
           </Routes>
