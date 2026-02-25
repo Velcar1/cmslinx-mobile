@@ -21,9 +21,11 @@ export default function DeviceRegistration() {
         setSuccessStatus(null);
 
         try {
+            const cleanCode = data.pairing_code.trim().toUpperCase();
+
             // Find the device by pairing_code
             const records = await pb.collection('devices').getList(1, 1, {
-                filter: `pairing_code = "${data.pairing_code}"`,
+                filter: `pairing_code = "${cleanCode}"`,
             });
 
             if (records.items.length === 0) {
