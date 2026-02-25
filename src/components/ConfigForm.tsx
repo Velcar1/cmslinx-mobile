@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, Save, FileVideo, ExternalLink, AlertCircle, CheckCircle2, X, Folder } from 'lucide-react';
+import { Loader2, Save, FileVideo, ExternalLink, CheckCircle2, X, Folder } from 'lucide-react';
 import { pb, type PWAConfig } from '../lib/pocketbase';
 
 interface ConfigFormInputs {
