@@ -56,12 +56,30 @@ export default function DeviceList() {
         };
         init();
 
-        const unsubscribe = pb.collection('devices').subscribe('*', () => {
+        const subscribeToUpdates = async () => {
+            try {
+                return await pb.collection('devices').subscribe('*', () => {
+                    fetchDevices();
+                });
+            } catch (err) {
+                // Subtle log instead of warn as we have the polling fallback
+                console.debug("Realtime subscription inactive (falling back to polling):", err);
+                return null;
+            }
+        };
+
+        const unsubscribePromise = subscribeToUpdates();
+
+        // 3. Fallback: Polling every 10 seconds for robustness
+        const pollingId = setInterval(() => {
             fetchDevices();
-        });
+        }, 10000);
 
         return () => {
-            unsubscribe.then(unsub => unsub());
+            clearInterval(pollingId);
+            unsubscribePromise.then(unsub => {
+                if (unsub) unsub();
+            }).catch(() => { }); // Ignore unsubscribe errors
         };
     }, []);
 
