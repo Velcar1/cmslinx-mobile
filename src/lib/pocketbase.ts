@@ -8,7 +8,9 @@ pb.autoCancellation(false);
 
 export interface PWAConfig {
     id: string;
-    video_url: string;
+    content_type: 'video_interactive' | 'video_only' | 'image_only' | 'web_only';
+    video_url?: string;
+    image_url?: string;
     redirect_url: string;
     created?: string;
     updated?: string;
