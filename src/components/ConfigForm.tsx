@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X } from 'lucide-react';
-import { pb, type PWAConfig, type Media } from '../lib/pocketbase';
+import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X, List } from 'lucide-react';
+import { pb, type PWAConfig, type Media, type Playlist } from '../lib/pocketbase';
 
-type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only';
+type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist';
 
 interface ConfigFormInputs {
     redirect_url: string;
@@ -31,6 +31,10 @@ export default function ConfigForm() {
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
+    // Playlist state
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
+    const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('');
+
     const { register, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormInputs>();
 
     // Fetch groups on mount
@@ -44,8 +48,12 @@ export default function ConfigForm() {
                 } else {
                     setIsLoading(false);
                 }
+
+                // Fetch playlists too
+                const plistRecords = await pb.collection('playlists').getFullList<Playlist>();
+                setPlaylists(plistRecords);
             } catch (err) {
-                console.error("Error fetching groups:", err);
+                console.error("Error fetching groups/playlists:", err);
                 setIsLoading(false);
             }
         };
@@ -65,7 +73,7 @@ export default function ConfigForm() {
             try {
                 const record = await pb.collection('pwa_config').getFirstListItem<PWAConfig>(`group = "${selectedGroup}"`, {
                     sort: '-created',
-                    expand: 'media'
+                    expand: 'media,playlist'
                 });
 
                 if (record) {
@@ -78,9 +86,15 @@ export default function ConfigForm() {
                     if (record.expand && record.expand.media) {
                         setSelectedMedia(record.expand.media);
                     }
+                    if (record.playlist) {
+                        setSelectedPlaylistId(record.playlist);
+                    } else {
+                        setSelectedPlaylistId('');
+                    }
                 } else {
                     reset({ redirect_url: '' });
                     setSelectedMedia(null);
+                    setSelectedPlaylistId('');
                     setContentType('video_interactive');
                 }
             } catch (err: any) {
@@ -149,16 +163,24 @@ export default function ConfigForm() {
             if (contentType === 'image_only' && selectedMedia && isVideo(selectedMedia.file)) {
                 throw new Error("Debe seleccionar un archivo de imagen para este tipo de contenido.");
             }
+            if (contentType === 'playlist' && !selectedPlaylistId) {
+                throw new Error("Debe seleccionar una Playlist para este tipo de contenido.");
+            }
             if ((contentType === 'video_interactive' || contentType === 'web_only') && !data.redirect_url) {
                 throw new Error("URL requerida para este tipo de contenido.");
             }
 
             formData.append('redirect_url', data.redirect_url);
 
-            if (selectedMedia) {
+            if (contentType === 'playlist') {
+                formData.append('playlist', selectedPlaylistId);
+                formData.append('media', ''); // clear media relation
+            } else if (selectedMedia) {
                 formData.append('media', selectedMedia.id);
+                formData.append('playlist', ''); // clear playlist relation
             } else {
-                formData.append('media', ''); // clear relation if not needed
+                formData.append('media', '');
+                formData.append('playlist', '');
             }
 
             let record;
@@ -195,11 +217,13 @@ export default function ConfigForm() {
     const contentTypes: { id: ContentType, label: string, icon: any, desc: string }[] = [
         { id: 'video_interactive', label: 'Video Interactivo', icon: MonitorPlay, desc: 'Video en loop que abre una web al tocar' },
         { id: 'video_only', label: 'Solo Video', icon: Tv, desc: 'Video en loop sin interacción' },
+        { id: 'playlist', label: 'Playlist', icon: List, desc: 'Secuencia de videos e imágenes' },
         { id: 'image_only', label: 'Solo Imagen', icon: ImageIcon, desc: 'Imagen fija en pantalla completa' },
         { id: 'web_only', label: 'Solo Web', icon: Globe, desc: 'Carga una página web directamente' },
     ];
 
-    const showMediaSelector = contentType !== 'web_only';
+    const showMediaSelector = contentType !== 'web_only' && contentType !== 'playlist';
+    const showPlaylistSelector = contentType === 'playlist';
 
     return (
         <>
@@ -245,11 +269,45 @@ export default function ConfigForm() {
                                         >
                                             <type.icon className={`w-8 h-8 mb-3 ${contentType === type.id ? 'text-primary' : 'text-slate-400'}`} />
                                             <span className={`text-sm font-bold block ${contentType === type.id ? 'text-primary' : 'text-slate-600'}`}>{type.label}</span>
-                                            <p className="text-[10px] text-slate-400 mt-1 leading-tight">{type.desc}</p>
+                                            <p className="text-[10px] text-slate-400 mt-1 leading-tight h-8 flex items-center">{type.desc}</p>
                                         </button>
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Selector de Playlist */}
+                            {showPlaylistSelector && (
+                                <div className="space-y-4 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-4">
+                                    <label className="text-sm font-bold text-text-primary uppercase tracking-widest flex items-center gap-2">
+                                        <List className="w-4 h-4 text-primary" /> Seleccionar Playlist
+                                    </label>
+                                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                                        {playlists.length === 0 ? (
+                                            <div className="text-center py-4">
+                                                <p className="text-sm text-slate-500 mb-4">No has creado ninguna playlist todavía.</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => window.open('/playlists', '_blank')}
+                                                    className="bg-primary hover:bg-[#D98201] text-white px-6 py-2 rounded-xl font-bold transition-all shadow-md text-sm"
+                                                >
+                                                    Crear Playlist en nueva pestaña
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={selectedPlaylistId}
+                                                onChange={(e) => setSelectedPlaylistId(e.target.value)}
+                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-4 px-5 text-slate-800 transition-all outline-none font-bold shadow-sm"
+                                            >
+                                                <option value="">-- Elige una lista --</option>
+                                                {playlists.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-100">
 

@@ -27,14 +27,36 @@ export interface Media {
     updated?: string;
 }
 
+export interface Playlist {
+    id: string;
+    name: string;
+    created?: string;
+    updated?: string;
+}
+
+export interface PlaylistItem {
+    id: string;
+    playlist: string;
+    media: string;
+    duration: number;
+    sort_order: number;
+    created?: string;
+    updated?: string;
+    expand?: {
+        media?: Media;
+    };
+}
+
 export interface PWAConfig {
     id: string;
-    content_type: 'video_interactive' | 'video_only' | 'image_only' | 'web_only';
-    media?: string; // Relation to media collection
+    content_type: 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist';
+    media?: string;
+    playlist?: string;
     redirect_url: string;
     created?: string;
     updated?: string;
     expand?: {
         media?: Media;
+        playlist?: Playlist;
     };
 }

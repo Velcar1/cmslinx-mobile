@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Link as LinkIcon, MonitorPlay, Folder, Image } from 'lucide-react';
+import { Home, Link as LinkIcon, MonitorPlay, Folder, Image, List } from 'lucide-react';
 
 export default function Navigation() {
     const location = useLocation();
@@ -8,6 +8,7 @@ export default function Navigation() {
         { path: '/', label: 'Configuración', icon: Home },
         { path: '/groups', label: 'Grupos', icon: Folder },
         { path: '/media', label: 'Multimedios', icon: Image },
+        { path: '/playlists', label: 'Playlists', icon: List },
         { path: '/devices/register', label: 'Vincular', icon: LinkIcon },
         { path: '/devices', label: 'Dispositivos', icon: MonitorPlay },
     ];
