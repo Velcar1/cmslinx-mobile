@@ -4,6 +4,7 @@ import DashboardHome from './pages/DashboardHome';
 import DeviceRegistration from './pages/DeviceRegistration';
 import DeviceList from './pages/DeviceList';
 import GroupManagement from './pages/GroupManagement';
+import MediaLibrary from './pages/MediaLibrary';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path="/groups" element={<GroupManagement />} />
             <Route path="/devices/register" element={<DeviceRegistration />} />
             <Route path="/devices" element={<DeviceList />} />
+            <Route path="/media" element={<MediaLibrary />} />
           </Routes>
         </main>
 

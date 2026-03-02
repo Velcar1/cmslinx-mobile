@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay } from 'lucide-react';
-import { pb, type PWAConfig } from '../lib/pocketbase';
+import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X } from 'lucide-react';
+import { pb, type PWAConfig, type Media } from '../lib/pocketbase';
 
 type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only';
 
@@ -25,13 +25,11 @@ export default function ConfigForm() {
     // Content Type state
     const [contentType, setContentType] = useState<ContentType>('video_interactive');
 
-    // File upload state for video
-    const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
-    const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
-
-    // File upload state for image
-    const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-    const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+    // Media Selection state
+    const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
+    const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+    const [mediaList, setMediaList] = useState<Media[]>([]);
+    const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormInputs>();
 
@@ -62,12 +60,12 @@ export default function ConfigForm() {
             setIsLoading(true);
             setSaveStatus(null);
             setConfigId(null);
-            setSelectedVideoFile(null);
-            setSelectedImageFile(null);
+            setSelectedMedia(null);
 
             try {
                 const record = await pb.collection('pwa_config').getFirstListItem<PWAConfig>(`group = "${selectedGroup}"`, {
                     sort: '-created',
+                    expand: 'media'
                 });
 
                 if (record) {
@@ -77,30 +75,18 @@ export default function ConfigForm() {
                         redirect_url: record.redirect_url,
                     });
 
-                    if (record.video_url) {
-                        const url = pb.files.getURL(record, record.video_url);
-                        setCurrentVideoUrl(url);
-                    } else {
-                        setCurrentVideoUrl(null);
-                    }
-
-                    if (record.image_url) {
-                        const url = pb.files.getURL(record, record.image_url);
-                        setCurrentImageUrl(url);
-                    } else {
-                        setCurrentImageUrl(null);
+                    if (record.expand && record.expand.media) {
+                        setSelectedMedia(record.expand.media);
                     }
                 } else {
                     reset({ redirect_url: '' });
-                    setCurrentVideoUrl(null);
-                    setCurrentImageUrl(null);
+                    setSelectedMedia(null);
                     setContentType('video_interactive');
                 }
             } catch (err: any) {
                 if (err.status === 404) {
                     reset({ redirect_url: '' });
-                    setCurrentVideoUrl(null);
-                    setCurrentImageUrl(null);
+                    setSelectedMedia(null);
                     setContentType('video_interactive');
                 } else if (!err.isAbort) {
                     console.error('Error fetching config:', err);
@@ -113,16 +99,30 @@ export default function ConfigForm() {
         fetchConfig();
     }, [selectedGroup, reset]);
 
-    const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedVideoFile(e.target.files[0]);
+    const handleOpenMediaModal = async () => {
+        setIsMediaModalOpen(true);
+        setIsLoadingMedia(true);
+        try {
+            const records = await pb.collection('media').getFullList<Media>({
+                sort: '-created',
+            });
+            setMediaList(records);
+        } catch (error) {
+            console.error('Error fetching media:', error);
+            alert('Error al cargar la galería.');
+        } finally {
+            setIsLoadingMedia(false);
         }
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedImageFile(e.target.files[0]);
-        }
+    const handleSelectMedia = (media: Media) => {
+        setSelectedMedia(media);
+        setIsMediaModalOpen(false);
+    };
+
+    const isVideo = (filename: string) => {
+        if (!filename) return false;
+        return filename.toLowerCase().endsWith('.mp4');
     };
 
     const onSubmit = async (data: ConfigFormInputs) => {
@@ -140,11 +140,14 @@ export default function ConfigForm() {
             formData.append('group', selectedGroup);
 
             // Required fields validation based on type
-            if ((contentType === 'video_interactive' || contentType === 'video_only') && !selectedVideoFile && !currentVideoUrl) {
-                throw new Error("Debe subir un video para este tipo de contenido.");
+            if ((contentType === 'video_interactive' || contentType === 'video_only' || contentType === 'image_only') && !selectedMedia) {
+                throw new Error("Debe seleccionar un archivo multimedia para este tipo de contenido.");
             }
-            if (contentType === 'image_only' && !selectedImageFile && !currentImageUrl) {
-                throw new Error("Debe subir una imagen para este tipo de contenido.");
+            if ((contentType === 'video_interactive' || contentType === 'video_only') && selectedMedia && !isVideo(selectedMedia.file)) {
+                throw new Error("Debe seleccionar un archivo de video (MP4) para este tipo de contenido.");
+            }
+            if (contentType === 'image_only' && selectedMedia && isVideo(selectedMedia.file)) {
+                throw new Error("Debe seleccionar un archivo de imagen para este tipo de contenido.");
             }
             if ((contentType === 'video_interactive' || contentType === 'web_only') && !data.redirect_url) {
                 throw new Error("URL requerida para este tipo de contenido.");
@@ -152,31 +155,21 @@ export default function ConfigForm() {
 
             formData.append('redirect_url', data.redirect_url);
 
-            if (selectedVideoFile) {
-                formData.append('video_url', selectedVideoFile);
-            }
-            if (selectedImageFile) {
-                formData.append('image_url', selectedImageFile);
+            if (selectedMedia) {
+                formData.append('media', selectedMedia.id);
+            } else {
+                formData.append('media', ''); // clear relation if not needed
             }
 
             let record;
             if (configId) {
+                // Remove old fields for cleanliness if desired, PocketBase just ignores absent fields
                 record = await pb.collection('pwa_config').update(configId, formData);
             } else {
                 record = await pb.collection('pwa_config').create(formData);
             }
 
             setConfigId(record.id);
-            setSelectedVideoFile(null);
-            setSelectedImageFile(null);
-
-            if (record.video_url) {
-                setCurrentVideoUrl(pb.files.getURL(record, record.video_url));
-            }
-            if (record.image_url) {
-                setCurrentImageUrl(pb.files.getURL(record, record.image_url));
-            }
-
             setSaveStatus('success');
         } catch (err: any) {
             console.error('Error saving config:', err);
@@ -206,160 +199,255 @@ export default function ConfigForm() {
         { id: 'web_only', label: 'Solo Web', icon: Globe, desc: 'Carga una página web directamente' },
     ];
 
+    const showMediaSelector = contentType !== 'web_only';
+
     return (
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 relative z-10 text-left">
+        <>
+            <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 relative z-10 text-left">
+                <div className="bg-white/80 p-6 rounded-2xl glass flex flex-col sm:flex-row items-center gap-4 border-b-4 border-primary/20">
+                    <label className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2 whitespace-nowrap">
+                        <Folder className="w-5 h-5 text-primary" /> Seleccionar Grupo:
+                    </label>
+                    <select
+                        value={selectedGroup}
+                        onChange={(e) => setSelectedGroup(e.target.value)}
+                        className="flex-1 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-2 px-4 text-slate-800 transition-all outline-none font-medium text-lg cursor-pointer"
+                    >
+                        {groups.map(g => (
+                            <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                    </select>
+                </div>
 
-            <div className="bg-white/80 p-6 rounded-2xl glass flex flex-col sm:flex-row items-center gap-4 border-b-4 border-primary/20">
-                <label className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2 whitespace-nowrap">
-                    <Folder className="w-5 h-5 text-primary" /> Seleccionar Grupo:
-                </label>
-                <select
-                    value={selectedGroup}
-                    onChange={(e) => setSelectedGroup(e.target.value)}
-                    className="flex-1 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-2 px-4 text-slate-800 transition-all outline-none font-medium text-lg cursor-pointer"
-                >
-                    {groups.map(g => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            <div className="bg-white/80 p-8 rounded-2xl glass flex flex-col gap-8">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-4">
-                        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                        <p className="text-slate-500 font-medium">Cargando configuración...</p>
-                    </div>
-                ) : (
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
-                        {/* Selector de Tipo de Contenido */}
-                        <div className="space-y-4">
-                            <label className="text-sm font-bold text-text-primary uppercase tracking-widest flex items-center gap-2">
-                                <Tv className="w-4 h-4 text-primary" /> Tipo de Contenido
-                            </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {contentTypes.map((type) => (
-                                    <button
-                                        key={type.id}
-                                        type="button"
-                                        onClick={() => setContentType(type.id)}
-                                        className={`flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all duration-300 ${contentType === type.id
-                                            ? 'border-primary bg-primary/5 shadow-lg scale-105'
-                                            : 'border-slate-100 hover:border-primary/30 bg-slate-50/50'
-                                            }`}
-                                    >
-                                        <type.icon className={`w-8 h-8 mb-3 ${contentType === type.id ? 'text-primary' : 'text-slate-400'}`} />
-                                        <span className={`text-sm font-bold block ${contentType === type.id ? 'text-primary' : 'text-slate-600'}`}>{type.label}</span>
-                                        <p className="text-[10px] text-slate-400 mt-1 leading-tight">{type.desc}</p>
-                                    </button>
-                                ))}
+                <div className="bg-white/80 p-8 rounded-2xl glass flex flex-col gap-8">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-12 gap-4">
+                            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                            <p className="text-slate-500 font-medium">Cargando configuración...</p>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+                            {/* Selector de Tipo de Contenido */}
+                            <div className="space-y-4">
+                                <label className="text-sm font-bold text-text-primary uppercase tracking-widest flex items-center gap-2">
+                                    <Tv className="w-4 h-4 text-primary" /> Tipo de Contenido
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {contentTypes.map((type) => (
+                                        <button
+                                            key={type.id}
+                                            type="button"
+                                            onClick={() => setContentType(type.id)}
+                                            className={`flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all duration-300 ${contentType === type.id
+                                                ? 'border-primary bg-primary/5 shadow-lg scale-105'
+                                                : 'border-slate-100 hover:border-primary/30 bg-slate-50/50'
+                                                }`}
+                                        >
+                                            <type.icon className={`w-8 h-8 mb-3 ${contentType === type.id ? 'text-primary' : 'text-slate-400'}`} />
+                                            <span className={`text-sm font-bold block ${contentType === type.id ? 'text-primary' : 'text-slate-600'}`}>{type.label}</span>
+                                            <p className="text-[10px] text-slate-400 mt-1 leading-tight">{type.desc}</p>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-100">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-100">
 
-                            {/* Campo de Video */}
-                            {(contentType === 'video_interactive' || contentType === 'video_only') && (
-                                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-left-4">
-                                    <label className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                                        <FileVideo className="w-4 h-4 text-primary" /> Video (MP4)
-                                    </label>
-                                    <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 hover:border-primary/50 transition-all flex flex-col items-center justify-center gap-2 min-h-[180px]">
-                                        {selectedVideoFile ? (
-                                            <div className="text-center">
-                                                <div className="bg-primary/10 p-2 rounded-lg inline-block mb-2"><FileVideo className="w-6 h-6 text-primary" /></div>
-                                                <p className="text-xs font-bold text-slate-700 truncate max-w-[150px]">{selectedVideoFile.name}</p>
-                                                <button type="button" onClick={() => setSelectedVideoFile(null)} className="text-[10px] text-red-500 font-bold mt-1">Quitar</button>
-                                            </div>
-                                        ) : currentVideoUrl ? (
-                                            <div className="text-center">
-                                                <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                                                <p className="text-xs font-bold text-green-700">Video guardado</p>
-                                                <p className="text-[10px] text-slate-400">Click para cambiar</p>
-                                                <input type="file" accept="video/mp4" onChange={handleVideoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                            </div>
-                                        ) : (
-                                            <div className="text-center">
-                                                <FileVideo className="w-8 h-8 text-slate-300 mx-auto mb-1" />
-                                                <p className="text-xs text-slate-500">Seleccionar MP4</p>
-                                                <input type="file" accept="video/mp4" onChange={handleVideoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Campo de Imagen */}
-                            {contentType === 'image_only' && (
-                                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-left-4">
-                                    <label className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                                        <ImageIcon className="w-4 h-4 text-primary" /> Imagen
-                                    </label>
-                                    <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 hover:border-primary/50 transition-all flex flex-col items-center justify-center gap-2 min-h-[180px]">
-                                        {selectedImageFile ? (
-                                            <div className="text-center">
-                                                <div className="bg-primary/10 p-2 rounded-lg inline-block mb-2"><ImageIcon className="w-6 h-6 text-primary" /></div>
-                                                <p className="text-xs font-bold text-slate-700 truncate max-w-[150px]">{selectedImageFile.name}</p>
-                                                <button type="button" onClick={() => setSelectedImageFile(null)} className="text-[10px] text-red-500 font-bold mt-1">Quitar</button>
-                                            </div>
-                                        ) : currentImageUrl ? (
-                                            <div className="text-center">
-                                                <img src={currentImageUrl} className="w-20 h-20 object-cover rounded-lg mx-auto mb-2 border border-slate-100 shadow-sm" alt="Preview" />
-                                                <p className="text-xs font-bold text-green-700">Imagen guardada</p>
-                                                <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                            </div>
-                                        ) : (
-                                            <div className="text-center">
-                                                <ImageIcon className="w-8 h-8 text-slate-300 mx-auto mb-1" />
-                                                <p className="text-xs text-slate-500">Seleccionar imagen</p>
-                                                <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Campo de URL */}
-                            {(contentType === 'video_interactive' || contentType === 'web_only') && (
-                                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4">
-                                    <label htmlFor="redirect_url" className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                                        <Globe className="w-4 h-4 text-primary" /> {contentType === 'web_only' ? 'URL de la Página Web' : 'URL al tocar pantalla'}
-                                    </label>
-                                    <input
-                                        id="redirect_url"
-                                        type="url"
-                                        placeholder="https://su-sitio-web.com"
-                                        className={`w-full bg-slate-50 border ${errors.redirect_url ? 'border-red-400' : 'border-slate-200'} rounded-xl py-4 px-5 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all`}
-                                        {...register("redirect_url", { required: (contentType === 'video_interactive' || contentType === 'web_only') })}
-                                    />
-                                    <p className="text-[10px] text-slate-400 italic">
-                                        {contentType === 'web_only' ? 'Esta web se mostrará a pantalla completa.' : 'Esta web se abrirá cuando alguien toque el video.'}
-                                    </p>
-                                </div>
-                            )}
-
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6 border-t border-slate-100">
-                            <div className="flex-1">
-                                {saveStatus === 'success' && (
-                                    <div className="flex items-center gap-2 text-green-600 text-sm font-bold bg-green-50 px-4 py-2 rounded-lg border border-green-100">
-                                        <CheckCircle2 className="w-4 h-4" /> ¡Configuración actualizada correctamente!
+                                {/* Campo Multimedia desde Galería */}
+                                {showMediaSelector && (
+                                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-left-4">
+                                        <label className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                                            {contentType === 'image_only' ? <ImageIcon className="w-4 h-4 text-primary" /> : <FileVideo className="w-4 h-4 text-primary" />}
+                                            Archivo Multimedia
+                                        </label>
+                                        <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 hover:border-primary/50 transition-all flex flex-col items-center justify-center gap-4 min-h-[180px] bg-white">
+                                            {selectedMedia ? (
+                                                <div className="flex flex-col items-center text-center w-full">
+                                                    <div className="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 mb-3 border border-slate-200 flex items-center justify-center relative shadow-inner">
+                                                        {isVideo(selectedMedia.file) ? (
+                                                            <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
+                                                                <Video className="w-12 h-12 text-white/50" />
+                                                            </div>
+                                                        ) : (
+                                                            <img
+                                                                src={pb.files.getURL(selectedMedia, selectedMedia.file, { thumb: '400x300' })}
+                                                                alt={selectedMedia.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-700 truncate w-full px-2" title={selectedMedia.name}>{selectedMedia.name}</p>
+                                                    <div className="flex gap-2 mt-3 w-full">
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleOpenMediaModal}
+                                                            className="flex-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-bold transition-colors"
+                                                        >
+                                                            Cambiar
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedMedia(null)}
+                                                            className="px-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center w-full flex flex-col items-center">
+                                                    <div className="bg-primary/10 p-4 rounded-full mb-3">
+                                                        <Folder className="w-8 h-8 text-primary" />
+                                                    </div>
+                                                    <p className="text-sm text-slate-500 mb-4 px-4">Selecciona un archivo de tu biblioteca de medios</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleOpenMediaModal}
+                                                        className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+                                                    >
+                                                        <Plus className="w-4 h-4" /> Abrir Galería
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
+
+                                {/* Campo de URL */}
+                                {(contentType === 'video_interactive' || contentType === 'web_only') && (
+                                    <div className={`flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 ${!showMediaSelector ? 'md:col-span-2' : ''}`}>
+                                        <label htmlFor="redirect_url" className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                                            <Globe className="w-4 h-4 text-primary" /> {contentType === 'web_only' ? 'URL de la Página Web' : 'URL al tocar pantalla'}
+                                        </label>
+                                        <input
+                                            id="redirect_url"
+                                            type="url"
+                                            placeholder="https://su-sitio-web.com"
+                                            className={`w-full bg-slate-50 border ${errors.redirect_url ? 'border-red-400' : 'border-slate-200'} rounded-xl py-4 px-5 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all`}
+                                            {...register("redirect_url", { required: (contentType === 'video_interactive' || contentType === 'web_only') })}
+                                        />
+                                        <p className="text-[10px] text-slate-400 italic">
+                                            {contentType === 'web_only' ? 'Esta web se mostrará a pantalla completa.' : 'Esta web se abrirá cuando alguien toque el video.'}
+                                        </p>
+                                    </div>
+                                )}
+
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6 border-t border-slate-100">
+                                <div className="flex-1">
+                                    {saveStatus === 'success' && (
+                                        <div className="flex items-center gap-2 text-green-600 text-sm font-bold bg-green-50 px-4 py-2 rounded-lg border border-green-100">
+                                            <CheckCircle2 className="w-4 h-4" /> ¡Configuración actualizada correctamente!
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="w-full sm:w-auto bg-primary hover:bg-[#D98201] text-white py-4 px-12 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:scale-95 transform active:scale-95"
+                                >
+                                    {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
+                                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </div>
+            </div>
+
+            {/* Modal de Galería Multimedia */}
+            {isMediaModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800">Seleccionar de Galería</h3>
+                                <p className="text-sm text-slate-500">Elige un archivo para este grupo.</p>
                             </div>
                             <button
-                                type="submit"
-                                disabled={isSaving}
-                                className="w-full sm:w-auto bg-primary hover:bg-[#D98201] text-white py-4 px-12 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:scale-95 transform active:scale-95"
+                                onClick={() => setIsMediaModalOpen(false)}
+                                className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-full transition-colors"
                             >
-                                {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
-                                {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                                <X className="w-6 h-6" />
                             </button>
                         </div>
-                    </form>
-                )}
-            </div>
-        </div>
+
+                        <div className="p-6 overflow-y-auto flex-1 bg-slate-50">
+                            {isLoadingMedia ? (
+                                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                                    <p className="text-sm font-medium text-slate-500">Cargando biblioteca...</p>
+                                </div>
+                            ) : mediaList.length === 0 ? (
+                                <div className="text-center py-20">
+                                    <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <ImageIcon className="w-8 h-8 text-slate-400" />
+                                    </div>
+                                    <p className="font-semibold text-slate-600">Galería vacía</p>
+                                    <p className="text-sm text-slate-500 mt-1 mb-6">Sube archivos primero en la sección Multimedios.</p>
+                                    <button
+                                        onClick={() => window.open('/media', '_blank')}
+                                        className="text-primary font-bold hover:underline"
+                                    >
+                                        Ir a Multimedios &rarr;
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                    {mediaList.map((media) => {
+                                        const videoFile = isVideo(media.file);
+                                        const isSelected = selectedMedia?.id === media.id;
+                                        // Validate file type based on selected content_type
+                                        const isSelectable =
+                                            ((contentType === 'video_interactive' || contentType === 'video_only') && videoFile) ||
+                                            (contentType === 'image_only' && !videoFile);
+
+                                        return (
+                                            <div
+                                                key={media.id}
+                                                onClick={() => isSelectable && handleSelectMedia(media)}
+                                                className={`
+                                                    relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer flex flex-col bg-white
+                                                    ${isSelected ? 'border-primary ring-2 ring-primary/30 shadow-md' : 'border-transparent hover:border-slate-300 shadow-sm'}
+                                                    ${!isSelectable ? 'opacity-40 cursor-not-allowed grayscale-[50%]' : 'hover:shadow-md'}
+                                                `}
+                                            >
+                                                <div className="aspect-square bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                                                    {videoFile ? (
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
+                                                            <Video className="w-8 h-8 text-white/50" />
+                                                        </div>
+                                                    ) : (
+                                                        <img src={pb.files.getURL(media, media.file, { thumb: '300x300' })} alt={media.name} className="w-full h-full object-cover" />
+                                                    )}
+
+                                                    {videoFile && (
+                                                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md rounded px-2 py-1 flex items-center gap-1">
+                                                            <Video className="w-3 h-3 text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="p-3 border-t border-slate-100">
+                                                    <p className="text-xs font-bold text-slate-700 truncate" title={media.name}>{media.name}</p>
+                                                    {!isSelectable && (
+                                                        <p className="text-[9px] text-red-500 font-bold mt-1 uppercase">Formato incorrecto</p>
+                                                    )}
+                                                </div>
+                                                {isSelected && (
+                                                    <div className="absolute top-2 right-2 bg-primary rounded-full p-1 text-white shadow-sm">
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
