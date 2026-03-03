@@ -7,6 +7,8 @@ type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only
 
 interface ConfigFormInputs {
     redirect_url: string;
+    schedule_start?: string;
+    schedule_end?: string;
 }
 
 interface DeviceGroup {
@@ -16,10 +18,12 @@ interface DeviceGroup {
 
 interface ConfigFormProps {
     forceGroupId?: string;
+    isSchedule?: boolean;
+    configToEdit?: string | null;
     onSaveSuccess?: () => void;
 }
 
-export default function ConfigForm({ forceGroupId, onSaveSuccess }: ConfigFormProps) {
+export default function ConfigForm({ forceGroupId, isSchedule = false, configToEdit = null, onSaveSuccess }: ConfigFormProps) {
     const [groups, setGroups] = useState<DeviceGroup[]>([]);
     const [selectedGroup, setSelectedGroup] = useState<string>(forceGroupId || '');
     const [isLoading, setIsLoading] = useState(true);
@@ -79,16 +83,23 @@ export default function ConfigForm({ forceGroupId, onSaveSuccess }: ConfigFormPr
             setSelectedMedia(null);
 
             try {
-                const record = await pb.collection('pwa_config').getFirstListItem<PWAConfig>(`group = "${selectedGroup}"`, {
-                    sort: '-created',
-                    expand: 'media,playlist'
-                });
+                let record;
+                if (configToEdit) {
+                    record = await pb.collection('pwa_config').getOne<PWAConfig>(configToEdit, { expand: 'media,playlist' });
+                } else if (!isSchedule) {
+                    record = await pb.collection('pwa_config').getFirstListItem<PWAConfig>(`group = "${selectedGroup}" && is_schedule != true`, {
+                        sort: '-created',
+                        expand: 'media,playlist'
+                    });
+                }
 
                 if (record) {
                     setConfigId(record.id);
                     setContentType(record.content_type || 'video_interactive');
                     reset({
                         redirect_url: record.redirect_url,
+                        schedule_start: record.schedule_start ? new Date(record.schedule_start).toISOString().slice(0, 16) : '',
+                        schedule_end: record.schedule_end ? new Date(record.schedule_end).toISOString().slice(0, 16) : ''
                     });
 
                     if (record.expand && record.expand.media) {
@@ -100,14 +111,14 @@ export default function ConfigForm({ forceGroupId, onSaveSuccess }: ConfigFormPr
                         setSelectedPlaylistId('');
                     }
                 } else {
-                    reset({ redirect_url: '' });
+                    reset({ redirect_url: '', schedule_start: '', schedule_end: '' });
                     setSelectedMedia(null);
                     setSelectedPlaylistId('');
                     setContentType('video_interactive');
                 }
             } catch (err: any) {
                 if (err.status === 404) {
-                    reset({ redirect_url: '' });
+                    reset({ redirect_url: '', schedule_start: '', schedule_end: '' });
                     setSelectedMedia(null);
                     setContentType('video_interactive');
                 } else if (!err.isAbort) {
@@ -119,7 +130,7 @@ export default function ConfigForm({ forceGroupId, onSaveSuccess }: ConfigFormPr
         };
 
         fetchConfig();
-    }, [selectedGroup, reset]);
+    }, [selectedGroup, isSchedule, configToEdit, reset]);
 
     const handleOpenMediaModal = async () => {
         setIsMediaModalOpen(true);
@@ -160,6 +171,19 @@ export default function ConfigForm({ forceGroupId, onSaveSuccess }: ConfigFormPr
             const formData = new FormData();
             formData.append('content_type', contentType);
             formData.append('group', selectedGroup);
+
+            if (isSchedule) {
+                formData.append('is_schedule', 'true');
+                if (!data.schedule_start || !data.schedule_end) {
+                    throw new Error("Debe especificar fecha/hora de inicio y fin para la programación.");
+                }
+                formData.append('schedule_start', new Date(data.schedule_start).toISOString());
+                formData.append('schedule_end', new Date(data.schedule_end).toISOString());
+            } else {
+                formData.append('is_schedule', 'false');
+                formData.append('schedule_start', '');
+                formData.append('schedule_end', '');
+            }
 
             // Required fields validation based on type
             if ((contentType === 'video_interactive' || contentType === 'video_only' || contentType === 'image_only') && !selectedMedia) {
@@ -264,6 +288,27 @@ export default function ConfigForm({ forceGroupId, onSaveSuccess }: ConfigFormPr
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+                            {isSchedule && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-primary/5 p-6 rounded-2xl border border-primary/20">
+                                    <div>
+                                        <label className="text-sm font-bold text-slate-700 mb-2 block">Inicio</label>
+                                        <input
+                                            type="datetime-local"
+                                            {...register("schedule_start", { required: isSchedule })}
+                                            className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-bold text-slate-700 mb-2 block">Fin</label>
+                                        <input
+                                            type="datetime-local"
+                                            {...register("schedule_end", { required: isSchedule })}
+                                            className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Selector de Tipo de Contenido */}
                             <div className="space-y-4">
                                 <label className="text-sm font-bold text-text-primary uppercase tracking-widest flex items-center gap-2">

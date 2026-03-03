@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Settings, Monitor, Loader2, X, Folder, PlayCircle, Smartphone } from 'lucide-react';
+import { Plus, Trash2, Settings, Monitor, Loader2, X, Folder, PlayCircle, Smartphone, CalendarClock, LayoutGrid } from 'lucide-react';
 import { pb, type Device } from '../lib/pocketbase';
 import ConfigForm from '../components/ConfigForm';
+import ScheduleManagement from '../components/ScheduleManagement';
 
 interface DeviceGroup {
     id: string;
@@ -15,6 +16,7 @@ export default function GroupManagement() {
     const [isCreating, setIsCreating] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'base' | 'schedules'>('base');
     const [viewingScreensGroup, setViewingScreensGroup] = useState<DeviceGroup | null>(null);
     const [groupScreens, setGroupScreens] = useState<Device[]>([]);
     const [isLoadingScreens, setIsLoadingScreens] = useState(false);
@@ -219,19 +221,38 @@ export default function GroupManagement() {
                                     {groups.find(g => g.id === selectedGroupId)?.name}
                                 </p>
                             </div>
+                            <div className="flex bg-slate-100 p-1 rounded-2xl mr-4 border border-slate-200 shadow-inner">
+                                <button
+                                    onClick={() => setActiveTab('base')}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${activeTab === 'base' ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    <LayoutGrid className="w-4 h-4" /> Base
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('schedules')}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${activeTab === 'schedules' ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    <CalendarClock className="w-4 h-4" /> Programación
+                                </button>
+                            </div>
                             <button
                                 onClick={() => setSelectedGroupId(null)}
-                                className="bg-slate-100 p-2 rounded-xl text-slate-400 hover:text-slate-600 transition-all"
+                                className="bg-slate-100 p-2 rounded-xl text-slate-400 hover:text-slate-600 transition-all hover:bg-slate-200"
                             >
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
 
                         <div className="p-8">
-                            <ConfigForm
-                                forceGroupId={selectedGroupId}
-                                onSaveSuccess={() => setSelectedGroupId(null)}
-                            />
+                            {activeTab === 'base' ? (
+                                <ConfigForm
+                                    forceGroupId={selectedGroupId}
+                                    isSchedule={false}
+                                    onSaveSuccess={() => { /* Opción de cerrar o mantener abierto */ }}
+                                />
+                            ) : (
+                                <ScheduleManagement groupId={selectedGroupId} />
+                            )}
                         </div>
                     </div>
                 </div>

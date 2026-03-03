@@ -53,6 +53,9 @@ export interface PWAConfig {
     media?: string;
     playlist?: string;
     redirect_url: string;
+    is_schedule?: boolean;
+    schedule_start?: string;
+    schedule_end?: string;
     created?: string;
     updated?: string;
     expand?: {
