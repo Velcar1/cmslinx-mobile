@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, Link as LinkIcon, CheckCircle2, AlertCircle, Smartphone, Folder } from 'lucide-react';
+import { Loader2, Link as LinkIcon, CheckCircle2, AlertCircle, Smartphone, Folder, ArrowLeft } from 'lucide-react';
 import { pb } from '../lib/pocketbase';
+import { Link } from 'react-router-dom';
 
 interface RegistrationInputs {
     pairing_code: string;
@@ -72,13 +73,25 @@ export default function DeviceRegistration() {
     };
 
     return (
-        <div className="flex flex-col items-center mb-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-md">
-                Vincular Nueva Pantalla
-            </h1>
-            <p className="text-blue-100 max-w-2xl text-lg opacity-90 mx-auto mb-10">
-                Ingrese el código que aparece en su dispositivo PWA para autorizarlo y asignarlo a un grupo.
-            </p>
+        <div className="flex flex-col items-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+            <div className="w-full max-w-xl mx-auto flex flex-col items-start gap-6 mb-8">
+                <Link
+                    to="/devices"
+                    className="flex items-center gap-2 text-slate-500 hover:text-primary font-medium transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Screens
+                </Link>
+
+                <div className="text-left w-full">
+                    <h1 className="text-4xl font-bold text-slate-800 mb-2 tracking-tight">
+                        Vincular Nueva Pantalla
+                    </h1>
+                    <p className="text-slate-500 text-lg">
+                        Ingrese el código que aparece en su dispositivo PWA para autorizarlo y asignarlo a un grupo.
+                    </p>
+                </div>
+            </div>
 
             <div className="w-full max-w-xl mx-auto space-y-6">
                 <div className="bg-white/80 p-8 rounded-2xl glass text-left relative overflow-hidden">

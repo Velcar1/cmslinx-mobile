@@ -14,9 +14,14 @@ interface DeviceGroup {
     name: string;
 }
 
-export default function ConfigForm() {
+interface ConfigFormProps {
+    forceGroupId?: string;
+    onSaveSuccess?: () => void;
+}
+
+export default function ConfigForm({ forceGroupId, onSaveSuccess }: ConfigFormProps) {
     const [groups, setGroups] = useState<DeviceGroup[]>([]);
-    const [selectedGroup, setSelectedGroup] = useState<string>('');
+    const [selectedGroup, setSelectedGroup] = useState<string>(forceGroupId || '');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [configId, setConfigId] = useState<string | null>(null);
@@ -43,9 +48,12 @@ export default function ConfigForm() {
             try {
                 const records = await pb.collection('device_groups').getFullList<DeviceGroup>();
                 setGroups(records);
-                if (records.length > 0) {
+
+                if (!forceGroupId && records.length > 0) {
                     setSelectedGroup(records[0].id);
-                } else {
+                } else if (forceGroupId) {
+                    setSelectedGroup(forceGroupId);
+                } else if (records.length === 0) {
                     setIsLoading(false);
                 }
 
@@ -58,7 +66,7 @@ export default function ConfigForm() {
             }
         };
         fetchGroups();
-    }, []);
+    }, [forceGroupId]);
 
     // Fetch config when selectedGroup changes
     useEffect(() => {
@@ -193,6 +201,9 @@ export default function ConfigForm() {
 
             setConfigId(record.id);
             setSaveStatus('success');
+            if (onSaveSuccess) {
+                setTimeout(onSaveSuccess, 1500);
+            }
         } catch (err: any) {
             console.error('Error saving config:', err);
             alert(err.message || "Error al guardar la configuración.");
@@ -202,7 +213,7 @@ export default function ConfigForm() {
         }
     };
 
-    if (groups.length === 0 && !isLoading) {
+    if (groups.length === 0 && !isLoading && !forceGroupId) {
         return (
             <div className="bg-white/80 p-12 rounded-2xl glass w-full max-w-2xl mx-auto flex flex-col items-center gap-4 text-center">
                 <Folder className="w-12 h-12 text-slate-300" />
@@ -228,20 +239,22 @@ export default function ConfigForm() {
     return (
         <>
             <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 relative z-10 text-left">
-                <div className="bg-white/80 p-6 rounded-2xl glass flex flex-col sm:flex-row items-center gap-4 border-b-4 border-primary/20">
-                    <label className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2 whitespace-nowrap">
-                        <Folder className="w-5 h-5 text-primary" /> Seleccionar Grupo:
-                    </label>
-                    <select
-                        value={selectedGroup}
-                        onChange={(e) => setSelectedGroup(e.target.value)}
-                        className="flex-1 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-2 px-4 text-slate-800 transition-all outline-none font-medium text-lg cursor-pointer"
-                    >
-                        {groups.map(g => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                    </select>
-                </div>
+                {!forceGroupId && (
+                    <div className="bg-white/80 p-6 rounded-2xl glass flex flex-col sm:flex-row items-center gap-4 border-b-4 border-primary/20 transition-all duration-300">
+                        <label className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2 whitespace-nowrap">
+                            <Folder className="w-5 h-5 text-primary" /> Seleccionar Grupo:
+                        </label>
+                        <select
+                            value={selectedGroup}
+                            onChange={(e) => setSelectedGroup(e.target.value)}
+                            className="flex-1 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-2 px-4 text-slate-800 transition-all outline-none font-medium text-lg cursor-pointer"
+                        >
+                            {groups.map(g => (
+                                <option key={g.id} value={g.id}>{g.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 <div className="bg-white/80 p-8 rounded-2xl glass flex flex-col gap-8">
                     {isLoading ? (

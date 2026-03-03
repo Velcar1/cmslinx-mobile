@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo, Plus } from 'lucide-react';
+import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo } from 'lucide-react';
 import { pb, type Media } from '../lib/pocketbase';
 
 export default function MediaLibrary() {
@@ -85,11 +85,11 @@ export default function MediaLibrary() {
     };
 
     return (
-        <div className="flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-500 max-w-6xl mx-auto w-full">
-            <header className="flex flex-col sm:flex-row items-center justify-between gap-4 glass bg-white/70 p-6 rounded-3xl m-2">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-text-primary tracking-tight">Multimedios</h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1">Sube imágenes y videos para asignarlos a tus grupos de pantallas.</p>
+                    <h1 className="text-3xl font-bold text-slate-800">Media Library</h1>
+                    <p className="text-slate-500 mt-1">Manage your images and videos for screen broadcasting.</p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -103,107 +103,121 @@ export default function MediaLibrary() {
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
-                        className="bg-primary hover:bg-[#D98201] text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="btn-primary flex items-center justify-center gap-2 min-w-[160px]"
                     >
                         {isUploading ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                Subiendo... {uploadProgress}%
+                                <span>{uploadProgress}%</span>
                             </>
                         ) : (
                             <>
                                 <UploadCloud className="w-5 h-5" />
-                                Subir Nuevo
+                                <span>Upload Media</span>
                             </>
                         )}
                     </button>
                 </div>
-            </header>
+            </div>
 
-            <main className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-2">
-                {isLoading ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4">
-                        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                        <p className="text-slate-500 font-medium">Cargando biblioteca...</p>
+            {isUploading && (
+                <div className="card-premium border-primary/20 bg-primary/5 py-4 animate-in slide-in-from-top-4">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-bold text-primary italic">Uploading asset...</span>
+                        <span className="text-sm font-bold text-primary">{uploadProgress}%</span>
                     </div>
-                ) : mediaList.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-20 glass bg-white/50 rounded-3xl border-2 border-dashed border-slate-200">
-                        <div className="bg-primary/10 p-4 rounded-2xl mb-4">
-                            <ImageIcon className="w-12 h-12 text-primary" />
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-800">No hay archivos</h2>
-                        <p className="text-slate-500 text-sm mt-1 mb-6 text-center max-w-sm">
-                            Sube tu primera imagen o video publicitario para poder usarlo en las pantallas.<br />
-                            <span className="text-xs">(Recomendados: .jpg, .png para imágenes. .mp4 optimizado para video)</span>
-                        </p>
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="bg-white border-2 border-primary text-primary hover:bg-primary/5 px-6 py-2 rounded-xl font-bold transition-all flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" /> Seleccionar Archivo
-                        </button>
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                            className="bg-primary h-full transition-all duration-300 ease-out"
+                            style={{ width: `${uploadProgress}%` }}
+                        />
                     </div>
-                ) : (
-                    mediaList.map((media) => {
+                </div>
+            )}
+
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                    <p className="text-slate-500 font-medium">Loading library...</p>
+                </div>
+            ) : mediaList.length === 0 ? (
+                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">
+                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
+                        <ImageIcon className="w-12 h-12" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">No media found</h3>
+                    <p className="text-slate-500 mt-2 mb-8">Upload your first image or video to start broadcasting.</p>
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn-primary"
+                    >
+                        Add Media
+                    </button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {mediaList.map((media) => {
                         const fileUrl = pb.files.getURL(media, media.file);
                         const videoFile = isVideo(media.file);
 
                         return (
-                            <div key={media.id} className="glass bg-white rounded-2xl overflow-hidden group hover:shadow-xl hover:shadow-primary/10 transition-all border border-slate-100 flex flex-col">
-                                <div className="aspect-video bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                            <div key={media.id} className="card-premium !p-0 group overflow-hidden flex flex-col hover:border-primary/30 transition-all">
+                                <div className="aspect-video bg-slate-50 relative overflow-hidden flex items-center justify-center">
                                     {videoFile ? (
                                         <>
                                             <video src={`${fileUrl}#t=0.1`} className="w-full h-full object-cover" muted preload="metadata" />
-                                            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md rounded px-2 py-1 flex items-center gap-1">
-                                                <Video className="w-3 h-3 text-white" />
-                                                <span className="text-[10px] text-white font-bold uppercase">Video</span>
+                                            <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-md rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border border-white/10">
+                                                <Video className="w-3.5 h-3.5 text-white" />
+                                                <span className="text-[10px] text-white font-bold uppercase tracking-wider">Video</span>
                                             </div>
                                         </>
                                     ) : (
                                         <>
-                                            <img src={fileUrl} alt={media.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                                            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md rounded px-2 py-1 flex items-center gap-1">
-                                                <ImageIcon className="w-3 h-3 text-white" />
-                                                <span className="text-[10px] text-white font-bold uppercase">Imagen</span>
+                                            <img src={fileUrl} alt={media.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                            <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border border-white/20">
+                                                <ImageIcon className="w-3.5 h-3.5 text-slate-800" />
+                                                <span className="text-[10px] text-slate-800 font-bold uppercase tracking-wider">Image</span>
                                             </div>
                                         </>
                                     )}
 
-                                    {/* Mover el botón de borrar aquí para que aparezca al hacer hover sobre la imagen referenciada */}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]">
+                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-[2px]">
                                         <button
                                             onClick={() => handleDelete(media.id, media.name)}
-                                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-xl shadow-lg transform hover:scale-110 transition-all"
-                                            title="Eliminar archivo"
+                                            className="bg-white hover:bg-red-50 text-red-500 p-3 rounded-2xl shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
+                                            title="Delete media"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
-                                        {videoFile && (
-                                            <a
-                                                href={fileUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl shadow-lg transform hover:scale-110 transition-all"
-                                                title="Ver archivo original"
-                                            >
-                                                <FileVideo className="w-5 h-5" />
-                                            </a>
-                                        )}
+                                        <a
+                                            href={fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="bg-primary hover:bg-[#D98201] text-white p-3 rounded-2xl shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75"
+                                            title="View Original"
+                                        >
+                                            <FileVideo className="w-5 h-5" />
+                                        </a>
                                     </div>
                                 </div>
-                                <div className="p-4 bg-white z-10">
-                                    <p className="font-semibold text-slate-800 truncate text-sm" title={media.name}>
+                                <div className="p-5 border-t border-slate-50 bg-white">
+                                    <p className="font-bold text-slate-800 truncate text-sm mb-1" title={media.name}>
                                         {media.name}
                                     </p>
-                                    <p className="text-[10px] text-slate-400 mt-1 uppercase font-medium">
-                                        ID: {media.id}
-                                    </p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400 font-mono">
+                                            {media.id}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded">
+                                            {videoFile ? 'MP4' : 'STATIC'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         );
-                    })
-                )}
-            </main>
+                    })}
+                </div>
+            )}
         </div>
     );
 }

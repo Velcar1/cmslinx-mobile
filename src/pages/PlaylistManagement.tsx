@@ -156,36 +156,45 @@ export default function PlaylistManagement() {
     const isVideo = (filename: string) => filename.toLowerCase().endsWith('.mp4');
 
     return (
-        <div className="flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-500 max-w-7xl mx-auto w-full">
-            <header className="flex flex-col sm:flex-row items-center justify-between gap-4 glass bg-white/70 p-6 rounded-3xl m-2">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-text-primary tracking-tight">Listas de Reproducción</h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1">Crea secuencias de contenido para tus pantallas.</p>
+                    <h1 className="text-3xl font-bold text-slate-800">Playlists</h1>
+                    <p className="text-slate-500 mt-1">Create sequences of content for your screen groups.</p>
                 </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="bg-primary hover:bg-[#D98201] text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md flex items-center gap-2"
+                    className="btn-primary flex items-center justify-center gap-2"
                 >
-                    <Plus className="w-5 h-5" /> Nueva Lista
+                    <Plus className="w-5 h-5" />
+                    New Playlist
                 </button>
-            </header>
+            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-2">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Sidebar: Playlists List */}
-                <aside className="lg:col-span-1 flex flex-col gap-4">
-                    <div className="glass bg-white p-4 rounded-2xl border border-slate-100 min-h-[400px]">
-                        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 px-2">Tus Listas</h2>
-                        <div className="flex flex-col gap-1">
+                <aside className="lg:col-span-1 space-y-4">
+                    <div className="card-premium h-full min-h-[500px] flex flex-col">
+                        <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-6">Your Playlists</h2>
+                        <div className="flex flex-col gap-2 flex-1">
                             {isLoading ? (
-                                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                                <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                    <span className="text-xs text-slate-400 font-medium">Loading...</span>
+                                </div>
                             ) : playlists.length === 0 ? (
-                                <p className="text-center text-sm text-slate-400 py-10">No hay listas creadas.</p>
+                                <div className="text-center py-10 px-4">
+                                    <p className="text-sm text-slate-400 font-medium leading-relaxed">No playlists created yet.</p>
+                                </div>
                             ) : (
                                 playlists.map(p => (
                                     <div
                                         key={p.id}
                                         onClick={() => handleSelectPlaylist(p)}
-                                        className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${selectedPlaylist?.id === p.id ? 'bg-primary text-white shadow-md' : 'hover:bg-slate-50 text-slate-700'}`}
+                                        className={`group flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all border-2 ${selectedPlaylist?.id === p.id
+                                            ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                                            : 'hover:bg-slate-50 text-slate-700 border-transparent'
+                                            }`}
                                     >
                                         <div className="flex items-center gap-3 overflow-hidden">
                                             <List className={`w-4 h-4 flex-shrink-0 ${selectedPlaylist?.id === p.id ? 'text-white' : 'text-primary'}`} />
@@ -193,9 +202,12 @@ export default function PlaylistManagement() {
                                         </div>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(p.id, p.name); }}
-                                            className={`opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500 hover:text-white transition-all ${selectedPlaylist?.id === p.id ? 'text-white/60 hover:bg-white/20' : 'text-red-400'}`}
+                                            className={`p-1.5 rounded-xl transition-all ${selectedPlaylist?.id === p.id
+                                                ? 'text-white/60 hover:bg-white/20 hover:text-white'
+                                                : 'text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100'
+                                                }`}
                                         >
-                                            <Trash2 className="w-3 h-3" />
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 ))
@@ -207,35 +219,38 @@ export default function PlaylistManagement() {
                 {/* Main Content: Playlist Items */}
                 <main className="lg:col-span-3">
                     {selectedPlaylist ? (
-                        <div className="flex flex-col gap-6">
-                            <div className="flex items-center justify-between glass bg-white p-6 rounded-2xl border-b-4 border-primary/20">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-primary/10 p-2 rounded-xl">
-                                        <List className="w-6 h-6 text-primary" />
+                        <div className="space-y-6">
+                            <div className="card-premium flex flex-col sm:flex-row items-center justify-between gap-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-primary/10 p-4 rounded-2xl text-primary">
+                                        <List className="w-7 h-7" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-black text-slate-800">{selectedPlaylist.name}</h2>
-                                        <p className="text-xs text-slate-400 font-medium italic">{items.length} elementos en total</p>
+                                        <h2 className="text-2xl font-bold text-slate-800">{selectedPlaylist.name}</h2>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} Elements</span>
+                                            <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                            <span className="text-xs font-medium text-slate-400 italic">Sequence order</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <button
                                     onClick={handleOpenMediaModal}
-                                    className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
+                                    className="w-full sm:w-auto btn-primary flex items-center justify-center gap-2 py-4 px-8"
                                 >
-                                    <Plus className="w-4 h-4" /> Agregar Contenido
+                                    <Plus className="w-5 h-5" /> Add Content
                                 </button>
                             </div>
 
-                            <div className="flex flex-col gap-3">
+                            <div className="space-y-4">
                                 {items.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 glass bg-white/50 rounded-3xl border-2 border-dashed border-slate-200">
-                                        <p className="text-slate-500 font-medium mb-4">Esta lista está vacía.</p>
-                                        <button
-                                            onClick={handleOpenMediaModal}
-                                            className="text-primary font-bold flex items-center gap-2 hover:underline"
-                                        >
-                                            <Plus className="w-4 h-4" /> Agregar primer elemento
-                                        </button>
+                                    <div className="card-premium flex flex-col items-center justify-center py-24 bg-slate-50/50 border-dashed">
+                                        <div className="bg-slate-200 p-6 rounded-3xl mb-4">
+                                            <Plus className="w-12 h-12 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-800">Empty Playlist</h3>
+                                        <p className="text-slate-500 mt-2 mb-8">Add assets from your library to build your sequence.</p>
+                                        <button onClick={handleOpenMediaModal} className="btn-primary">Add First Content</button>
                                     </div>
                                 ) : (
                                     items.map((item, index) => {
@@ -245,10 +260,10 @@ export default function PlaylistManagement() {
                                         const videoFile = isVideo(media.file);
 
                                         return (
-                                            <div key={item.id} className="glass bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group hover:shadow-lg transition-all">
-                                                <div className="text-slate-300 font-black text-xl italic w-8 text-center">{index + 1}</div>
+                                            <div key={item.id} className="card-premium flex items-center gap-6 group hover:border-primary/20 transition-all">
+                                                <div className="text-slate-300 font-black text-2xl italic w-10 text-center flex-shrink-0 group-hover:text-primary/20 transition-colors">{index + 1}</div>
 
-                                                <div className="w-24 h-16 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
+                                                <div className="w-32 h-20 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100 shadow-inner">
                                                     {videoFile ? (
                                                         <video src={`${fileUrl}#t=0.1`} className="w-full h-full object-cover" muted />
                                                     ) : (
@@ -257,56 +272,58 @@ export default function PlaylistManagement() {
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-bold text-slate-800 text-sm truncate">{media.name}</p>
-                                                    <div className="flex items-center gap-3 mt-1">
+                                                    <p className="font-bold text-slate-800 truncate mb-2">{media.name}</p>
+                                                    <div className="flex items-center gap-3">
                                                         {videoFile ? (
-                                                            <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                            <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-100">
                                                                 <Video className="w-3 h-3" /> Video
                                                             </span>
                                                         ) : (
-                                                            <span className="flex items-center gap-1 text-[10px] bg-orange-50 text-orange-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                                                <ImageIcon className="w-3 h-3" /> Imagen
+                                                            <span className="flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-emerald-100">
+                                                                <ImageIcon className="w-3 h-3" /> Image
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
 
                                                 {!videoFile && (
-                                                    <div className="flex flex-col items-center gap-1 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Duración</label>
+                                                    <div className="hidden sm:flex flex-col items-center gap-1 bg-slate-50 p-3 rounded-2xl border border-slate-100 min-w-[100px]">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</label>
                                                         <div className="flex items-center gap-2">
                                                             <input
                                                                 type="number"
                                                                 value={item.duration}
                                                                 onChange={(e) => handleUpdateDuration(item.id, parseInt(e.target.value) || 1)}
-                                                                className="w-12 text-center bg-transparent font-bold text-primary outline-none text-sm"
+                                                                className="w-12 text-center bg-transparent font-bold text-primary outline-none"
                                                                 min="1"
                                                             />
-                                                            <span className="text-xs text-slate-400 font-medium">s</span>
+                                                            <span className="text-[11px] text-slate-400 font-bold uppercase">Sec</span>
                                                         </div>
                                                     </div>
                                                 )}
 
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => moveItem(index, 'up')}
-                                                        disabled={index === 0}
-                                                        className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 disabled:opacity-20 transition-all"
-                                                    >
-                                                        <ArrowUp className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => moveItem(index, 'down')}
-                                                        disabled={index === items.length - 1}
-                                                        className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 disabled:opacity-20 transition-all"
-                                                    >
-                                                        <ArrowDown className="w-4 h-4" />
-                                                    </button>
+                                                <div className="flex items-center gap-1.5 ml-auto">
+                                                    <div className="flex flex-col gap-1">
+                                                        <button
+                                                            onClick={() => moveItem(index, 'up')}
+                                                            disabled={index === 0}
+                                                            className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
+                                                        >
+                                                            <ArrowUp className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => moveItem(index, 'down')}
+                                                            disabled={index === items.length - 1}
+                                                            className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
+                                                        >
+                                                            <ArrowDown className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                     <button
                                                         onClick={() => handleDeleteItem(item.id)}
-                                                        className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-all ml-2"
+                                                        className="p-3 rounded-2xl bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all border border-slate-100"
                                                     >
-                                                        <Trash2 className="w-4 h-4" />
+                                                        <Trash2 className="w-5 h-5" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -316,9 +333,12 @@ export default function PlaylistManagement() {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 glass bg-white/50 rounded-3xl border-2 border-dashed border-slate-200">
-                            <List className="w-12 h-12 text-slate-200 mb-4" />
-                            <p className="text-slate-500 font-medium">Selecciona una lista para ver sus elementos.</p>
+                        <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
+                            <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-300">
+                                <List className="w-16 h-16" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-slate-800">Select a Playlist</h3>
+                            <p className="text-slate-500 mt-2 max-w-sm">Choose a list from the sidebar or create a new one to manage its sequence.</p>
                         </div>
                     )}
                 </main>
@@ -326,34 +346,33 @@ export default function PlaylistManagement() {
 
             {/* Create Playlist Modal */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-200">
-                        <h3 className="text-2xl font-black text-slate-800 mb-6">Nueva Lista</h3>
-                        <div className="flex flex-col gap-4">
-                            <label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Nombre de la lista</label>
-                            <input
-                                type="text"
-                                autoFocus
-                                value={newPlaylistName}
-                                onChange={(e) => setNewPlaylistName(e.target.value)}
-                                placeholder="Ej: Promociones Marzo"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-5 text-slate-800 outline-none focus:border-primary transition-all font-bold"
-                            />
-                            <div className="flex gap-3 mt-4">
-                                <button
-                                    onClick={() => setIsCreateModalOpen(false)}
-                                    className="flex-1 py-4 px-6 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleCreatePlaylist}
-                                    disabled={!newPlaylistName.trim() || isSaving}
-                                    className="flex-1 bg-primary text-white py-4 px-6 rounded-xl font-bold shadow-lg hover:bg-[#D98201] transition-all flex items-center justify-center gap-2"
-                                >
-                                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crear Lista'}
-                                </button>
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-slate-800">New Playlist</h2>
+                            <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Playlist Name</label>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    value={newPlaylistName}
+                                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                                    placeholder="e.g. Sales Promos, Welcome Loop..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 font-bold"
+                                />
                             </div>
+                            <button
+                                onClick={handleCreatePlaylist}
+                                disabled={!newPlaylistName.trim() || isSaving}
+                                className="w-full btn-primary flex justify-center py-4"
+                            >
+                                {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : "Create Playlist"}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -361,45 +380,47 @@ export default function PlaylistManagement() {
 
             {/* Media Gallery (Picker) Modal */}
             {isMediaModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">Agregar de Galería</h3>
-                                <p className="text-sm text-slate-500">Selecciona una imagen o video para tu lista.</p>
+                                <h3 className="text-2xl font-bold text-slate-800">Add Content</h3>
+                                <p className="text-slate-500 font-medium mt-1">Select an asset to add to your sequence.</p>
                             </div>
                             <button
                                 onClick={() => setIsMediaModalOpen(false)}
-                                className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-full transition-colors"
+                                className="p-2.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-xl transition-all"
                             >
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto flex-1 bg-slate-50">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <div className="p-8 overflow-y-auto flex-1 bg-slate-50/50">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                                 {availableMedia.map((media) => {
                                     const videoFile = isVideo(media.file);
                                     return (
                                         <div
                                             key={media.id}
                                             onClick={() => handleAddItem(media)}
-                                            className="relative rounded-xl overflow-hidden border-2 border-transparent hover:border-primary bg-white shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                                            className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 transition-all cursor-pointer flex flex-col"
                                         >
-                                            <div className="aspect-square bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                                            <div className="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center">
                                                 {videoFile ? (
                                                     <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-                                                        <Video className="w-8 h-8 text-white/50" />
+                                                        <Video className="w-10 h-10 text-white/50" />
                                                     </div>
                                                 ) : (
-                                                    <img src={pb.files.getURL(media, media.file, { thumb: '300x300' })} className="w-full h-full object-cover" />
+                                                    <img src={pb.files.getURL(media, media.file, { thumb: '300x300' })} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                                 )}
                                                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all flex items-center justify-center">
-                                                    <Plus className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all" />
+                                                    <div className="bg-white p-2.5 rounded-2xl text-primary shadow-xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300">
+                                                        <Plus className="w-6 h-6" />
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="p-3 border-t border-slate-100">
-                                                <p className="text-xs font-bold text-slate-700 truncate">{media.name}</p>
+                                            <div className="p-4 border-t border-slate-50">
+                                                <p className="text-xs font-bold text-slate-700 truncate" title={media.name}>{media.name}</p>
                                             </div>
                                         </div>
                                     );

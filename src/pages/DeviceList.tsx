@@ -1,31 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Loader2, MonitorPlay, Trash2, Smartphone, Signal, Folder, Edit2, X } from 'lucide-react';
-import { pb } from '../lib/pocketbase';
-
-interface Device {
-    id: string;
-    name: string;
-    pairing_code: string;
-    is_registered: boolean;
-    group: string;
-    expand?: {
-        group?: {
-            name: string;
-        }
-    }
-}
-
-interface DeviceGroup {
-    id: string;
-    name: string;
-}
+import { Loader2, Trash2, RefreshCw, Monitor, Smartphone as DeviceIcon, Pencil, X } from 'lucide-react';
+import { pb, type Device, type PWAConfig } from '../lib/pocketbase';
+import { Link } from 'react-router-dom';
 
 export default function DeviceList() {
     const [devices, setDevices] = useState<Device[]>([]);
-    const [groups, setGroups] = useState<DeviceGroup[]>([]);
+    const [configs, setConfigs] = useState<Record<string, PWAConfig>>({});
+    const [groups, setGroups] = useState<{ id: string, name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
-    const [isUpdating, setIsUpdating] = useState<string | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    const fetchConfigs = async (groupIds: string[]) => {
+        try {
+            const uniqueGroupIds = [...new Set(groupIds)].filter(id => id);
+            const configPromises = uniqueGroupIds.map(id =>
+                pb.collection('pwa_config').getFirstListItem(`group = "${id}"`, { expand: 'media,playlist' })
+                    .catch(() => null)
+            );
+            const results = await Promise.all(configPromises);
+            const newConfigs: Record<string, PWAConfig> = {};
+            results.forEach((res, i) => {
+                if (res) newConfigs[uniqueGroupIds[i]] = res as any as PWAConfig;
+            });
+            setConfigs(prev => ({ ...prev, ...newConfigs }));
+        } catch (error) {
+            console.error('Error fetching group configs:', error);
+        }
+    };
+
+    const fetchGroups = async () => {
+        try {
+            const records = await pb.collection('device_groups').getFullList<{ id: string, name: string }>();
+            setGroups(records);
+        } catch (err) {
+            console.error("Error fetching groups:", err);
+        }
+    };
 
     const fetchDevices = async () => {
         try {
@@ -35,17 +46,10 @@ export default function DeviceList() {
                 sort: '-updated',
             });
             setDevices(records);
+            const groupIds = records.map(d => d.group);
+            fetchConfigs(groupIds);
         } catch (err) {
             console.error("Error fetching devices:", err);
-        }
-    };
-
-    const fetchGroups = async () => {
-        try {
-            const records = await pb.collection('device_groups').getFullList<DeviceGroup>();
-            setGroups(records);
-        } catch (err) {
-            console.error("Error fetching groups:", err);
         }
     };
 
@@ -62,29 +66,35 @@ export default function DeviceList() {
                     fetchDevices();
                 });
             } catch (err) {
-                // Subtle log instead of warn as we have the polling fallback
                 console.debug("Realtime subscription inactive (falling back to polling):", err);
                 return null;
             }
         };
 
         const unsubscribePromise = subscribeToUpdates();
-
-        // 3. Fallback: Polling every 10 seconds for robustness
-        const pollingId = setInterval(() => {
-            fetchDevices();
-        }, 10000);
+        const pollingId = setInterval(fetchDevices, 15000);
 
         return () => {
             clearInterval(pollingId);
-            unsubscribePromise.then(unsub => {
-                if (unsub) unsub();
-            }).catch(() => { }); // Ignore unsubscribe errors
+            unsubscribePromise.then(unsub => unsub?.()).catch(() => { });
         };
     }, []);
 
+    const handleUpdateGroup = async (deviceId: string, groupId: string) => {
+        setIsUpdating(true);
+        try {
+            await pb.collection('devices').update(deviceId, { group: groupId });
+            setEditingDeviceId(null);
+            await fetchDevices();
+        } catch (err) {
+            console.error("Error updating device group:", err);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     const handleDelete = async (id: string, name: string) => {
-        if (!window.confirm(`¿Estás seguro de desvincular "${name}"?`)) return;
+        if (!window.confirm(`Are you sure you want to unpair "${name}"?`)) return;
 
         try {
             await pb.collection('devices').delete(id);
@@ -94,100 +104,131 @@ export default function DeviceList() {
         }
     };
 
-    const handleGroupChange = async (deviceId: string, newGroupId: string) => {
-        setIsUpdating(deviceId);
-        try {
-            await pb.collection('devices').update(deviceId, {
-                group: newGroupId
-            });
-            setEditingDeviceId(null);
-            fetchDevices(); // Refresh to get expanded group name
-        } catch (err) {
-            console.error("Error updating device group:", err);
-            alert("Error al actualizar el grupo.");
-        } finally {
-            setIsUpdating(null);
-        }
+    const getContentName = (groupId: string) => {
+        const config = configs[groupId];
+        if (!config) return 'Idle';
+        if (config.content_type === 'playlist') return 'Playlist active';
+        if (config.expand?.media) return config.expand.media.name;
+        if (config.content_type === 'web_only') return 'Web Content';
+        return 'Ready';
     };
 
     return (
-        <div className="flex flex-col items-center mb-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500 w-full text-left">
-            <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-md text-center">Dispositivos Conectados</h1>
-            <p className="text-blue-100 mb-10 text-center opacity-90">Gestione sus pantallas activas y asigne grupos de contenido.</p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-3xl font-bold text-slate-800">Screen Management</h1>
+                <Link
+                    to="/devices/register"
+                    className="btn-primary flex items-center justify-center gap-2"
+                >
+                    <DeviceIcon className="w-5 h-5" />
+                    Pair New Screen
+                </Link>
+            </div>
 
             {isLoading ? (
-                <Loader2 className="w-12 h-12 text-white animate-spin mx-auto" />
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                    <p className="text-slate-500 font-medium">Loading screens...</p>
+                </div>
             ) : devices.length === 0 ? (
-                <div className="bg-white/10 p-12 rounded-3xl max-w-md w-full text-center">
-                    <Smartphone className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                    <h2 className="text-white text-xl font-semibold">No hay dispositivos</h2>
+                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">
+                    <div className="bg-slate-200 p-6 rounded-3xl mb-4">
+                        <Monitor className="w-12 h-12 text-slate-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">No screens paired</h3>
+                    <p className="text-slate-500 mt-2 mb-8">Pair your first device to start broadcasting content.</p>
+                    <Link to="/devices/register" className="btn-primary">Get Started</Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
-                    {devices.map((device) => (
-                        <div key={device.id} className="bg-white/90 p-6 rounded-2xl glass flex flex-col gap-4 relative transition-all hover:scale-[1.02] text-left">
-                            <div className="flex justify-between items-start">
-                                <div className="bg-primary/10 p-3 rounded-xl text-primary"><MonitorPlay className="w-6 h-6" /></div>
-                                <div className="flex items-center gap-1.5 text-green-500 bg-green-50 px-2 py-1 rounded-full border border-green-100 text-[10px] font-bold tracking-wider">ONLINE</div>
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-800">{device.name}</h3>
-                                <p className="text-[10px] text-slate-400 font-mono italic mt-1">ID: {device.id}</p>
-                            </div>
-
-                            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 text-sm">
-                                <div className="flex justify-between items-center py-1">
-                                    <span className="text-slate-500 flex items-center gap-1"><Folder className="w-3.5 h-3.5" /> Grupo:</span>
-                                    {editingDeviceId === device.id ? (
-                                        <div className="flex items-center gap-2">
-                                            <select
-                                                autoFocus
-                                                disabled={isUpdating === device.id}
-                                                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-primary outline-none focus:ring-1 focus:ring-primary"
-                                                defaultValue={device.group}
-                                                onChange={(e) => handleGroupChange(device.id, e.target.value)}
-                                            >
-                                                {groups.map(g => (
-                                                    <option key={g.id} value={g.id}>{g.name}</option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                onClick={() => setEditingDeviceId(null)}
-                                                className="text-slate-400 hover:text-red-500 transition-colors"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2 group/btn">
-                                            <span className="font-semibold text-primary">{device.expand?.group?.name || 'Sin Grupo'}</span>
-                                            <button
-                                                onClick={() => setEditingDeviceId(device.id)}
-                                                className="opacity-0 group-hover/btn:opacity-100 transition-opacity p-1 hover:bg-slate-100 rounded text-slate-400"
-                                                title="Cambiar grupo"
-                                            >
-                                                <Edit2 className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex justify-between py-1">
-                                    <span className="text-slate-500 flex items-center gap-1"><Signal className="w-3.5 h-3.5" /> Calidad de Red:</span>
-                                    <span className="font-semibold text-slate-700">Excelente</span>
-                                </div>
-                            </div>
-
-                            <button onClick={() => handleDelete(device.id, device.name)} className="mt-2 py-2.5 rounded-xl border border-red-100 text-red-500 font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2">
-                                <Trash2 className="w-4 h-4" /> Desvincular Pantalla
-                            </button>
-
-                            {isUpdating === device.id && (
-                                <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-2xl flex items-center justify-center z-20">
-                                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                <div className="card-premium overflow-hidden !p-0">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-100">
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Screen Name</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Group</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Now Playing</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {devices.map((device) => (
+                                    <tr key={device.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Online</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div>
+                                                <p className="font-bold text-slate-800">{device.name}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">{device.id}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {editingDeviceId === device.id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded-lg outline-none focus:border-primary transition-all"
+                                                        defaultValue={device.group}
+                                                        disabled={isUpdating}
+                                                        onChange={(e) => handleUpdateGroup(device.id, e.target.value)}
+                                                    >
+                                                        {groups.map(g => (
+                                                            <option key={g.id} value={g.id}>{g.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <button
+                                                        onClick={() => setEditingDeviceId(null)}
+                                                        className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 group/edit">
+                                                    <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+                                                        {device.expand?.group?.name || 'Unassigned'}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => setEditingDeviceId(device.id)}
+                                                        className="p-1.5 opacity-0 group-hover/edit:opacity-100 hover:bg-white hover:shadow-sm hover:text-primary rounded-lg transition-all text-slate-400"
+                                                        title="Change group"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-600">
+                                            {getContentName(device.group)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2 text-slate-400">
+                                                <button
+                                                    onClick={() => fetchDevices()}
+                                                    className="p-2 hover:bg-white hover:text-primary hover:shadow-sm rounded-lg transition-all"
+                                                    title="Refresh screen"
+                                                >
+                                                    <RefreshCw className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(device.id, device.name)}
+                                                    className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
+                                                    title="Unpair screen"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </div>
