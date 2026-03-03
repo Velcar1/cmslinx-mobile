@@ -5,7 +5,7 @@ import { pb } from '../lib/pocketbase';
 export default function DashboardHome() {
     const [stats, setStats] = useState({
         totalScreens: 0,
-        onlineScreens: 0,
+        registeredScreens: 0,
         displayGroups: 0,
         totalMedia: 0
     });
@@ -13,15 +13,16 @@ export default function DashboardHome() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const [screens, groups, media] = await Promise.all([
+                const [screens, registered, groups, media] = await Promise.all([
                     pb.collection('devices').getList(1, 1),
+                    pb.collection('devices').getList(1, 1, { filter: 'is_registered = true' }),
                     pb.collection('device_groups').getList(1, 1),
                     pb.collection('media').getList(1, 1),
                 ]);
 
                 setStats({
                     totalScreens: screens.totalItems,
-                    onlineScreens: screens.totalItems, // Mock online for now
+                    registeredScreens: registered.totalItems,
                     displayGroups: groups.totalItems,
                     totalMedia: media.totalItems
                 });
@@ -43,7 +44,7 @@ export default function DashboardHome() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {[
                     { label: 'Total Screens', value: stats.totalScreens, icon: Monitor, color: 'text-blue-500', bg: 'bg-blue-50' },
-                    { label: 'Online Screens', value: stats.onlineScreens, icon: Wifi, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                    { label: 'Registered Screens', value: stats.registeredScreens, icon: Wifi, color: 'text-emerald-500', bg: 'bg-emerald-50' },
                     { label: 'Display Groups', value: stats.displayGroups, icon: Layers, color: 'text-purple-500', bg: 'bg-purple-50' },
                     { label: 'Total Media Assets', value: stats.totalMedia, icon: Image, color: 'text-indigo-500', bg: 'bg-indigo-50' },
                 ].map((stat, i) => (
