@@ -7,6 +7,7 @@ type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only
 
 interface ConfigFormInputs {
     redirect_url: string;
+    name_schedule?: string;
     schedule_start?: string;
     schedule_end?: string;
 }
@@ -98,6 +99,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                     setContentType(record.content_type || 'video_interactive');
                     reset({
                         redirect_url: record.redirect_url,
+                        name_schedule: record.name_schedule || '',
                         schedule_start: record.schedule_start ? new Date(record.schedule_start).toISOString().slice(0, 16) : '',
                         schedule_end: record.schedule_end ? new Date(record.schedule_end).toISOString().slice(0, 16) : ''
                     });
@@ -118,7 +120,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                 }
             } catch (err: any) {
                 if (err.status === 404) {
-                    reset({ redirect_url: '', schedule_start: '', schedule_end: '' });
+                    reset({ redirect_url: '', name_schedule: '', schedule_start: '', schedule_end: '' });
                     setSelectedMedia(null);
                     setContentType('video_interactive');
                 } else if (!err.isAbort) {
@@ -174,6 +176,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
 
             if (isSchedule) {
                 formData.append('is_schedule', 'true');
+                formData.append('name_schedule', data.name_schedule || '');
                 if (!data.schedule_start || !data.schedule_end) {
                     throw new Error("Debe especificar fecha/hora de inicio y fin para la programación.");
                 }
@@ -289,22 +292,33 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                     ) : (
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
                             {isSchedule && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-primary/5 p-6 rounded-2xl border border-primary/20">
+                                <div className="space-y-6 bg-primary/5 p-6 rounded-2xl border border-primary/20">
                                     <div>
-                                        <label className="text-sm font-bold text-slate-700 mb-2 block">Inicio</label>
+                                        <label className="text-sm font-bold text-slate-700 mb-2 block uppercase tracking-wider">Nombre de la Programación</label>
                                         <input
-                                            type="datetime-local"
-                                            {...register("schedule_start", { required: isSchedule })}
+                                            type="text"
+                                            {...register("name_schedule", { required: isSchedule })}
+                                            placeholder="Ej: Promo Fin de Semana"
                                             className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="text-sm font-bold text-slate-700 mb-2 block">Fin</label>
-                                        <input
-                                            type="datetime-local"
-                                            {...register("schedule_end", { required: isSchedule })}
-                                            className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800"
-                                        />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-sm font-bold text-slate-700 mb-2 block text-xs uppercase opacity-70">Inicio</label>
+                                            <input
+                                                type="datetime-local"
+                                                {...register("schedule_start", { required: isSchedule })}
+                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-bold text-slate-700 mb-2 block text-xs uppercase opacity-70">Fin</label>
+                                            <input
+                                                type="datetime-local"
+                                                {...register("schedule_end", { required: isSchedule })}
+                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800 text-sm"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}

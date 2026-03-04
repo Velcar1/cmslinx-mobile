@@ -151,8 +151,11 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
                                             </div>
                                             <div>
                                                 <h5 className="font-bold text-slate-800 capitalize">
-                                                    {schedule.content_type.replace('_', ' ')}
+                                                    {schedule.name_schedule || schedule.content_type.replace('_', ' ')}
                                                 </h5>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                                                    {schedule.name_schedule ? schedule.content_type.replace('_', ' ') : ''}
+                                                </p>
                                                 {active && (
                                                     <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full inline-block mt-0.5">
                                                         Activo Ahora
