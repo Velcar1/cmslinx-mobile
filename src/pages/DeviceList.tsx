@@ -14,9 +14,10 @@ export default function DeviceList() {
     const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const { activeOrganization } = useOrganization();
-    const { hasPermission } = useAuth();
+    const { user, hasPermission } = useAuth();
     
     const canManageContent = hasPermission('manage_content');
+    const isSuperadmin = user?.role === 'superadmin';
 
     const fetchConfigs = async (groupIds: string[]) => {
         if (!activeOrganization) return;
@@ -133,7 +134,7 @@ export default function DeviceList() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h1 className="text-3xl font-bold text-slate-800">Screen Management</h1>
-                {canManageContent && (
+                {isSuperadmin && (
                     <Link
                         to="/devices/register"
                         className="btn-primary flex items-center justify-center gap-2"
@@ -164,7 +165,7 @@ export default function DeviceList() {
                     </div>
                     <h3 className="text-xl font-bold text-slate-800">No screens paired</h3>
                     <p className="text-slate-500 mt-2 mb-8">Pair your first device to start broadcasting content.</p>
-                    <Link to="/devices/register" className="btn-primary">Get Started</Link>
+                    {isSuperadmin && <Link to="/devices/register" className="btn-primary">Get Started</Link>}
                 </div>
             ) : (
                 <div className="card-premium overflow-hidden !p-0">
