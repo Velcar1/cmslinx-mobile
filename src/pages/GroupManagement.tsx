@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Settings, Monitor, Loader2, X, Folder, PlayCircle, Smartphone, CalendarClock, LayoutGrid } from 'lucide-react';
-import { pb, type Device } from '../lib/pocketbase';
+import { pb, type Device, type DeviceGroup } from '../lib/pocketbase';
 import ConfigForm from '../components/ConfigForm';
 import ScheduleManagement from '../components/ScheduleManagement';
+import { useOrganization } from '../context/OrganizationContext';
+import { Building2 } from 'lucide-react';
 
-interface DeviceGroup {
-    id: string;
-    name: string;
-}
+
 
 export default function GroupManagement() {
     const [groups, setGroups] = useState<DeviceGroup[]>([]);
@@ -22,16 +21,27 @@ export default function GroupManagement() {
     const [isLoadingScreens, setIsLoadingScreens] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const { activeOrganization } = useOrganization();
 
     const fetchGroups = async () => {
+        if (!activeOrganization) {
+            setGroups([]);
+            setScreenCounts({});
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
         try {
             const records = await pb.collection('device_groups').getFullList<DeviceGroup>({
                 sort: '-created',
+                filter: `organization = "${activeOrganization.id}"`,
             });
             setGroups(records);
 
             // Get screen counts per group
-            const screens = await pb.collection('devices').getFullList({ filter: 'is_registered = true' });
+            const screens = await pb.collection('devices').getFullList({ 
+                filter: `is_registered = true && organization = "${activeOrganization.id}"` 
+            });
             const counts: Record<string, number> = {};
             screens.forEach(s => {
                 if (s.group) counts[s.group] = (counts[s.group] || 0) + 1;
@@ -46,14 +56,14 @@ export default function GroupManagement() {
 
     useEffect(() => {
         fetchGroups();
-    }, []);
+    }, [activeOrganization]);
 
     const handleViewScreens = async (group: DeviceGroup) => {
         setViewingScreensGroup(group);
         setIsLoadingScreens(true);
         try {
             const records = await pb.collection('devices').getFullList<Device>({
-                filter: `group = "${group.id}"`,
+                filter: `group = "${group.id}" && organization = "${activeOrganization?.id}"`,
                 sort: 'name'
             });
             setGroupScreens(records);
@@ -71,7 +81,11 @@ export default function GroupManagement() {
         setIsCreating(true);
         setStatus(null);
         try {
-            await pb.collection('device_groups').create({ name: newGroupName });
+            if (!activeOrganization) throw new Error("No organization selected");
+            await pb.collection('device_groups').create({ 
+                name: newGroupName,
+                organization: activeOrganization.id
+            });
             setNewGroupName('');
             setShowCreateModal(false);
             fetchGroups();
@@ -100,19 +114,29 @@ export default function GroupManagement() {
                     <h1 className="text-3xl font-bold text-slate-800">Display Groups</h1>
                     <p className="text-slate-500 mt-1">Organize your screens and push content updates.</p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="btn-primary flex items-center justify-center gap-2"
-                >
-                    <Plus className="w-5 h-5" />
-                    New Group
-                </button>
+                {activeOrganization && (
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="btn-primary flex items-center justify-center gap-2"
+                    >
+                        <Plus className="w-5 h-5" />
+                        New Group
+                    </button>
+                )}
             </div>
 
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    <p className="text-slate-500 font-medium">Loading groups...</p>
+                    <p className="text-slate-500 font-medium tracking-wide">Cargando grupos...</p>
+                </div>
+            ) : !activeOrganization ? (
+                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed text-center">
+                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
+                        <Building2 className="w-12 h-12" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">No hay empresa seleccionada</h3>
+                    <p className="text-slate-500 mt-2">Por favor, selecciona o crea una empresa en el menú lateral.</p>
                 </div>
             ) : groups.length === 0 ? (
                 <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">

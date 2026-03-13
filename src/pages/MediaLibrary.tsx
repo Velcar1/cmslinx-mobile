@@ -1,19 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
-import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo } from 'lucide-react';
+import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo, Building2 } from 'lucide-react';
 import { pb, type Media } from '../lib/pocketbase';
+import { useOrganization } from '../context/OrganizationContext';
 
 export default function MediaLibrary() {
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const { activeOrganization } = useOrganization();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchMedia = async () => {
+        if (!activeOrganization) {
+            setMediaList([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const records = await pb.collection('media').getFullList<Media>({
                 sort: '-created',
+                filter: `organization = "${activeOrganization.id}"`,
             });
             setMediaList(records);
         } catch (error) {
@@ -25,7 +33,7 @@ export default function MediaLibrary() {
 
     useEffect(() => {
         fetchMedia();
-    }, []);
+    }, [activeOrganization]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -35,9 +43,12 @@ export default function MediaLibrary() {
         setUploadProgress(0);
 
         try {
+            if (!activeOrganization) throw new Error("No hay una organización seleccionada.");
+
             const formData = new FormData();
             formData.append('file', file);
             formData.append('name', file.name);
+            formData.append('organization', activeOrganization.id);
 
             // Fake progress since pocketbase fetch doesn't expose axios-like progress natively easily in standard get/post
             const interval = setInterval(() => {
@@ -139,6 +150,14 @@ export default function MediaLibrary() {
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
                     <p className="text-slate-500 font-medium">Loading library...</p>
+                </div>
+            ) : !activeOrganization ? (
+                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">
+                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
+                        <Building2 className="w-12 h-12" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">No hay empresa seleccionada</h3>
+                    <p className="text-slate-500 mt-2">Por favor, selecciona o crea una empresa en el menú lateral.</p>
                 </div>
             ) : mediaList.length === 0 ? (
                 <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">

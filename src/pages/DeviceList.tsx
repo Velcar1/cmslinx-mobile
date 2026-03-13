@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Loader2, Trash2, RefreshCw, Monitor, Smartphone as DeviceIcon, Pencil, X } from 'lucide-react';
 import { pb, type Device, type PWAConfig } from '../lib/pocketbase';
 import { Link } from 'react-router-dom';
+import { useOrganization } from '../context/OrganizationContext';
+import { Building2 } from 'lucide-react';
 
 export default function DeviceList() {
     const [devices, setDevices] = useState<Device[]>([]);
@@ -10,12 +12,14 @@ export default function DeviceList() {
     const [isLoading, setIsLoading] = useState(true);
     const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const { activeOrganization } = useOrganization();
 
     const fetchConfigs = async (groupIds: string[]) => {
+        if (!activeOrganization) return;
         try {
             const uniqueGroupIds = [...new Set(groupIds)].filter(id => id);
             const configPromises = uniqueGroupIds.map(id =>
-                pb.collection('pwa_config').getFirstListItem(`group = "${id}"`, { expand: 'media,playlist' })
+                pb.collection('pwa_config').getFirstListItem(`group = "${id}" && organization = "${activeOrganization.id}"`, { expand: 'media,playlist' })
                     .catch(() => null)
             );
             const results = await Promise.all(configPromises);
@@ -30,8 +34,11 @@ export default function DeviceList() {
     };
 
     const fetchGroups = async () => {
+        if (!activeOrganization) return;
         try {
-            const records = await pb.collection('device_groups').getFullList<{ id: string, name: string }>();
+            const records = await pb.collection('device_groups').getFullList<{ id: string, name: string }>({
+                filter: `organization = "${activeOrganization.id}"`
+            });
             setGroups(records);
         } catch (err) {
             console.error("Error fetching groups:", err);
@@ -39,9 +46,14 @@ export default function DeviceList() {
     };
 
     const fetchDevices = async () => {
+        if (!activeOrganization) {
+            setDevices([]);
+            setIsLoading(false);
+            return;
+        }
         try {
             const records = await pb.collection('devices').getFullList<Device>({
-                filter: 'is_registered = true',
+                filter: `is_registered = true && organization = "${activeOrganization.id}"`,
                 expand: 'group',
                 sort: '-updated',
             });
@@ -71,14 +83,14 @@ export default function DeviceList() {
             }
         };
 
-        const unsubscribePromise = subscribeToUpdates();
+        const unregisterPromise = subscribeToUpdates();
         const pollingId = setInterval(fetchDevices, 15000);
 
         return () => {
             clearInterval(pollingId);
-            unsubscribePromise.then(unsub => unsub?.()).catch(() => { });
+            unregisterPromise.then(unsub => unsub?.()).catch(() => { });
         };
-    }, []);
+    }, [activeOrganization]);
 
     const handleUpdateGroup = async (deviceId: string, groupId: string) => {
         setIsUpdating(true);
@@ -130,6 +142,14 @@ export default function DeviceList() {
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
                     <p className="text-slate-500 font-medium">Loading screens...</p>
+                </div>
+            ) : !activeOrganization ? (
+                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed text-center">
+                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
+                        <Building2 className="w-12 h-12" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">No hay empresa seleccionada</h3>
+                    <p className="text-slate-500 mt-2">Por favor, selecciona o crea una empresa en el menú lateral.</p>
                 </div>
             ) : devices.length === 0 ? (
                 <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">

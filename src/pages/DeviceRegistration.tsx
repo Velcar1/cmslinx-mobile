@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { Loader2, Link as LinkIcon, CheckCircle2, AlertCircle, Smartphone, Folder, ArrowLeft } from 'lucide-react';
 import { pb } from '../lib/pocketbase';
 import { Link } from 'react-router-dom';
+import { useOrganization } from '../context/OrganizationContext';
+import { Building2 } from 'lucide-react';
 
 interface RegistrationInputs {
     pairing_code: string;
@@ -20,22 +22,30 @@ export default function DeviceRegistration() {
     const [isRegistering, setIsRegistering] = useState(false);
     const [errorStatus, setErrorStatus] = useState<string | null>(null);
     const [successStatus, setSuccessStatus] = useState<string | null>(null);
+    const { activeOrganization } = useOrganization();
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<RegistrationInputs>();
 
     useEffect(() => {
         const fetchGroups = async () => {
+            if (!activeOrganization) return;
             try {
-                const records = await pb.collection('device_groups').getFullList<DeviceGroup>();
+                const records = await pb.collection('device_groups').getFullList<DeviceGroup>({
+                    filter: `organization = "${activeOrganization.id}"`
+                });
                 setGroups(records);
             } catch (err) {
                 console.error("Error fetching groups:", err);
             }
         };
         fetchGroups();
-    }, []);
+    }, [activeOrganization]);
 
     const onSubmit = async (data: RegistrationInputs) => {
+        if (!activeOrganization) {
+            setErrorStatus("No hay una empresa seleccionada.");
+            return;
+        }
         setIsRegistering(true);
         setErrorStatus(null);
         setSuccessStatus(null);
@@ -60,6 +70,7 @@ export default function DeviceRegistration() {
             await pb.collection('devices').update(device.id, {
                 name: data.name,
                 group: data.group,
+                organization: activeOrganization.id,
                 is_registered: true
             });
 
@@ -93,7 +104,16 @@ export default function DeviceRegistration() {
                 </div>
             </div>
 
-            <div className="w-full max-w-xl mx-auto space-y-6">
+            {!activeOrganization ? (
+                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed text-center w-full max-w-xl">
+                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
+                        <Building2 className="w-12 h-12" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">No hay empresa seleccionada</h3>
+                    <p className="text-slate-500 mt-2">Por favor, selecciona o crea una empresa en el menú lateral antes de vincular una pantalla.</p>
+                </div>
+            ) : (
+                <div className="w-full max-w-xl mx-auto space-y-6">
                 <div className="bg-white/80 p-8 rounded-2xl glass text-left relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Smartphone className="w-24 h-24 text-slate-900" />
@@ -167,7 +187,8 @@ export default function DeviceRegistration() {
                         </button>
                     </form>
                 </div>
-            </div>
+                </div>
+            )}
         </div>
     );
 }

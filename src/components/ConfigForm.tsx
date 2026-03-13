@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X, List } from 'lucide-react';
 import { pb, type PWAConfig, type Media, type Playlist } from '../lib/pocketbase';
+import { useOrganization } from '../context/OrganizationContext';
+import { Building2 } from 'lucide-react';
 
 type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist';
 
@@ -44,6 +46,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     // Playlist state
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('');
+    const { activeOrganization } = useOrganization();
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormInputs>();
 
@@ -51,7 +54,13 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     useEffect(() => {
         const fetchGroups = async () => {
             try {
-                const records = await pb.collection('device_groups').getFullList<DeviceGroup>();
+                if (!activeOrganization) {
+                    setIsLoading(false);
+                    return;
+                }
+                const records = await pb.collection('device_groups').getFullList<DeviceGroup>({
+                    filter: `organization = "${activeOrganization.id}"`
+                });
                 setGroups(records);
 
                 if (!forceGroupId && records.length > 0) {
@@ -63,7 +72,9 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                 }
 
                 // Fetch playlists too
-                const plistRecords = await pb.collection('playlists').getFullList<Playlist>();
+                const plistRecords = await pb.collection('playlists').getFullList<Playlist>({
+                    filter: `organization = "${activeOrganization.id}"`
+                });
                 setPlaylists(plistRecords);
             } catch (err) {
                 console.error("Error fetching groups/playlists:", err);
@@ -71,7 +82,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
             }
         };
         fetchGroups();
-    }, [forceGroupId]);
+    }, [forceGroupId, activeOrganization]);
 
     // Fetch config when selectedGroup changes
     useEffect(() => {
@@ -138,8 +149,10 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
         setIsMediaModalOpen(true);
         setIsLoadingMedia(true);
         try {
+            if (!activeOrganization) return;
             const records = await pb.collection('media').getFullList<Media>({
                 sort: '-created',
+                filter: `organization = "${activeOrganization.id}"`,
             });
             setMediaList(records);
         } catch (error) {
@@ -170,9 +183,11 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
         setSaveStatus(null);
 
         try {
+            if (!activeOrganization) throw new Error("No hay una empresa seleccionada.");
             const formData = new FormData();
             formData.append('content_type', contentType);
             formData.append('group', selectedGroup);
+            formData.append('organization', activeOrganization.id);
 
             if (isSchedule) {
                 formData.append('is_schedule', 'true');
@@ -243,11 +258,23 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     if (groups.length === 0 && !isLoading && !forceGroupId) {
         return (
             <div className="bg-white/80 p-12 rounded-2xl glass w-full max-w-2xl mx-auto flex flex-col items-center gap-4 text-center">
-                <Folder className="w-12 h-12 text-slate-300" />
-                <h2 className="text-xl font-semibold text-text-primary">No hay grupos configurados</h2>
-                <p className="text-slate-500 max-w-sm">
-                    Primero debe crear un grupo de pantallas en la sección "Grupos" para poder asignarles contenido.
-                </p>
+                {!activeOrganization ? (
+                    <>
+                        <Building2 className="w-12 h-12 text-slate-300" />
+                        <h2 className="text-xl font-semibold text-text-primary">No hay empresa seleccionada</h2>
+                        <p className="text-slate-500 max-w-sm">
+                            Por favor, selecciona o crea una empresa en el menú lateral.
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <Folder className="w-12 h-12 text-slate-300" />
+                        <h2 className="text-xl font-semibold text-text-primary">No hay grupos configurados</h2>
+                        <p className="text-slate-500 max-w-sm">
+                            Primero debe crear un grupo de pantallas en la sección "Grupos" para poder asignarles contenido.
+                        </p>
+                    </>
+                )}
             </div>
         );
     }

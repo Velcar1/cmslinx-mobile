@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Monitor, Wifi, Layers, Image } from 'lucide-react';
 import { pb } from '../lib/pocketbase';
+import { useOrganization } from '../context/OrganizationContext';
+import { Building2 } from 'lucide-react';
 
 export default function DashboardHome() {
     const [stats, setStats] = useState({
@@ -9,15 +11,21 @@ export default function DashboardHome() {
         displayGroups: 0,
         totalMedia: 0
     });
+    const { activeOrganization } = useOrganization();
 
     useEffect(() => {
         const fetchStats = async () => {
+            if (!activeOrganization) {
+                setStats({ totalScreens: 0, registeredScreens: 0, displayGroups: 0, totalMedia: 0 });
+                return;
+            }
             try {
+                const orgFilter = `organization = "${activeOrganization.id}"`;
                 const [screens, registered, groups, media] = await Promise.all([
-                    pb.collection('devices').getList(1, 1),
-                    pb.collection('devices').getList(1, 1, { filter: 'is_registered = true' }),
-                    pb.collection('device_groups').getList(1, 1),
-                    pb.collection('media').getList(1, 1),
+                    pb.collection('devices').getList(1, 1, { filter: orgFilter }),
+                    pb.collection('devices').getList(1, 1, { filter: `is_registered = true && ${orgFilter}` }),
+                    pb.collection('device_groups').getList(1, 1, { filter: orgFilter }),
+                    pb.collection('media').getList(1, 1, { filter: orgFilter }),
                 ]);
 
                 setStats({
@@ -31,7 +39,7 @@ export default function DashboardHome() {
             }
         };
         fetchStats();
-    }, []);
+    }, [activeOrganization]);
 
     return (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto">
@@ -40,7 +48,20 @@ export default function DashboardHome() {
                 <p className="text-slate-500 text-lg">Your L1NX system status at a glance.</p>
             </div>
 
-            {/* Stats Cards */}
+            {/* Show message if no organization selected */}
+            {!activeOrganization ? (
+                <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
+                    <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-400">
+                        <Building2 className="w-16 h-16" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-slate-800">Selecciona una empresa</h2>
+                    <p className="text-slate-500 mt-2 max-w-md mx-auto">
+                        Para visualizar las estadísticas y gestionar tus pantallas, selecciona una empresa existente o crea una nueva en el menú lateral.
+                    </p>
+                </div>
+            ) : (
+                <>
+                {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {[
                     { label: 'Total Screens', value: stats.totalScreens, icon: Monitor, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -69,7 +90,9 @@ export default function DashboardHome() {
                         </div>
                     </div>
                 ))}
-            </div>
+                </div>
+                </>
+            )}
         </div>
     );
 }

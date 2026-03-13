@@ -6,12 +6,28 @@ const pbUrl = import.meta.env.VITE_PB_URL || 'http://127.0.0.1:8090';
 export const pb = new PocketBase(pbUrl);
 pb.autoCancellation(false);
 
+export interface Organization {
+    id: string;
+    name: string;
+    created?: string;
+    updated?: string;
+}
+
+export interface DeviceGroup {
+    id: string;
+    name: string;
+    organization: string;
+    created?: string;
+    updated?: string;
+}
+
 export interface Device {
     id: string;
     name: string;
     pairing_code: string;
     is_registered: boolean;
     group: string;
+    organization: string;
     expand?: {
         group?: {
             name: string;
@@ -23,6 +39,7 @@ export interface Media {
     id: string;
     name: string;
     file: string;
+    organization: string;
     created?: string;
     updated?: string;
 }
@@ -30,6 +47,7 @@ export interface Media {
 export interface Playlist {
     id: string;
     name: string;
+    organization: string;
     created?: string;
     updated?: string;
 }
@@ -57,6 +75,8 @@ export interface PWAConfig {
     is_schedule?: boolean;
     schedule_start?: string;
     schedule_end?: string;
+    organization: string;
+    group: string;
     created?: string;
     updated?: string;
     expand?: {

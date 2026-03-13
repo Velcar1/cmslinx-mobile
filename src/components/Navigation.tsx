@@ -1,8 +1,38 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard } from 'lucide-react';
+import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X } from 'lucide-react';
+import { useState } from 'react';
+import { useOrganization } from '../context/OrganizationContext';
+import { pb } from '../lib/pocketbase';
 
 export default function Navigation() {
     const location = useLocation();
+    const { organizations, activeOrganization, setActiveOrganization, isLoading, refreshOrganizations } = useOrganization();
+    const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
+    const [showNewOrgModal, setShowNewOrgModal] = useState(false);
+    const [newOrgName, setNewOrgName] = useState('');
+    const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+
+    const handleCreateOrganization = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newOrgName.trim()) return;
+
+        setIsCreatingOrg(true);
+        try {
+            const record = await pb.collection('organizations').create({
+                name: newOrgName
+            });
+            await refreshOrganizations();
+            setActiveOrganization(record as any);
+            setShowNewOrgModal(false);
+            setNewOrgName('');
+            setIsOrgDropdownOpen(false);
+        } catch (error) {
+            console.error('Error creating organization:', error);
+            alert('Error al crear la organización');
+        } finally {
+            setIsCreatingOrg(false);
+        }
+    };
 
     const navItems = [
         { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,7 +45,7 @@ export default function Navigation() {
     return (
         <nav className="fixed left-0 top-0 bottom-0 w-64 bg-sidebar text-slate-300 flex flex-col z-50">
             {/* Logo Section */}
-            <div className="p-8 mb-4">
+            <div className="p-8 pb-4">
                 <div className="flex items-center gap-2">
                     <span className="text-3xl font-bold tracking-tighter text-white">L1</span>
                     <span className="text-3xl font-bold tracking-tighter flex">
@@ -23,6 +53,56 @@ export default function Navigation() {
                         <span className="text-blue-400">X</span>
                     </span>
                 </div>
+            </div>
+
+            {/* Organization Selector */}
+            <div className="px-4 mb-6 relative">
+                <button 
+                    onClick={() => setIsOrgDropdownOpen(!isOrgDropdownOpen)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 text-left group"
+                >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="p-2 rounded-lg bg-primary/20 text-primary shrink-0">
+                            <Building2 className="w-4 h-4" />
+                        </div>
+                        <div className="overflow-hidden">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Empresa</p>
+                            <p className="text-sm font-bold text-white truncate">
+                                {isLoading ? 'Cargando...' : (activeOrganization?.name || 'Seleccionar...')}
+                            </p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOrgDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isOrgDropdownOpen && (
+                    <div className="absolute top-full left-4 right-4 mt-2 bg-[#1a1c23] border border-white/10 rounded-2xl shadow-2xl z-[60] py-2 max-h-64 overflow-y-auto overflow-x-hidden animate-in fade-in slide-in-from-top-2">
+                        {organizations.map((org) => (
+                            <button
+                                key={org.id}
+                                onClick={() => {
+                                    setActiveOrganization(org);
+                                    setIsOrgDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left ${activeOrganization?.id === org.id ? 'text-primary' : 'text-slate-300'}`}
+                            >
+                                <Building2 className="w-4 h-4 shrink-0" />
+                                <span className="text-sm font-medium truncate">{org.name}</span>
+                            </button>
+                        ))}
+                        <div className="h-px bg-white/5 mx-2 my-2" />
+                        <button
+                            onClick={() => {
+                                setShowNewOrgModal(true);
+                                setIsOrgDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-primary hover:bg-primary/5 transition-colors text-left"
+                        >
+                            <Plus className="w-4 h-4 shrink-0" />
+                            <span className="text-sm font-bold truncate">Nueva Empresa</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Nav Items */}
@@ -58,6 +138,45 @@ export default function Navigation() {
                     <span className="text-[15px]">Settings</span>
                 </Link>
             </div>
+
+            {/* New Org Modal */}
+            {showNewOrgModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowNewOrgModal(false)} />
+                    <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-slate-800">Nueva Empresa</h3>
+                                <button onClick={() => setShowNewOrgModal(false)} className="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-all">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <form onSubmit={handleCreateOrganization} className="space-y-6">
+                                <div>
+                                    <label className="text-sm font-bold text-slate-700 mb-2 block uppercase tracking-wider">Nombre de la Organización</label>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        value={newOrgName}
+                                        onChange={(e) => setNewOrgName(e.target.value)}
+                                        placeholder="Ej: Mi Empresa S.A."
+                                        className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl py-4 px-5 outline-none transition-all text-slate-800 text-lg"
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isCreatingOrg}
+                                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg"
+                                >
+                                    {isCreatingOrg ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+                                    Crear Empresa
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }

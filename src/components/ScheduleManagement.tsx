@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, CalendarClock, Loader2, Edit2 } from 'lucide-react';
 import { pb, type PWAConfig } from '../lib/pocketbase';
+import { useOrganization } from '../context/OrganizationContext';
 import ConfigForm from './ConfigForm';
 
 interface ScheduleManagementProps {
@@ -12,12 +13,18 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
     const [isLoading, setIsLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
     const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
+    const { activeOrganization } = useOrganization();
 
     const fetchSchedules = async () => {
+        if (!activeOrganization) {
+            setSchedules([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const records = await pb.collection('pwa_config').getFullList<PWAConfig>({
-                filter: `group = "${groupId}" && is_schedule = true`,
+                filter: `group = "${groupId}" && is_schedule = true && organization = "${activeOrganization.id}"`,
                 sort: 'schedule_start',
                 expand: 'media,playlist'
             });
@@ -31,7 +38,7 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
 
     useEffect(() => {
         fetchSchedules();
-    }, [groupId]);
+    }, [groupId, activeOrganization]);
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('¿Seguro que deseas eliminar esta programación?')) return;

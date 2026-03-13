@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Plus, Trash2, List, Image as ImageIcon, Video, ArrowUp, ArrowDown, X } from 'lucide-react';
 import { pb, type Playlist, type PlaylistItem, type Media } from '../lib/pocketbase';
+import { useOrganization } from '../context/OrganizationContext';
 
 export default function PlaylistManagement() {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -14,12 +15,19 @@ export default function PlaylistManagement() {
     const [newPlaylistName, setNewPlaylistName] = useState('');
     const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
     const [availableMedia, setAvailableMedia] = useState<Media[]>([]);
+    const { activeOrganization } = useOrganization();
 
     const fetchPlaylists = async () => {
+        if (!activeOrganization) {
+            setPlaylists([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const records = await pb.collection('playlists').getFullList<Playlist>({
                 sort: '-created',
+                filter: `organization = "${activeOrganization.id}"`,
             });
             setPlaylists(records);
             if (records.length > 0 && !selectedPlaylist) {
@@ -47,7 +55,7 @@ export default function PlaylistManagement() {
 
     useEffect(() => {
         fetchPlaylists();
-    }, []);
+    }, [activeOrganization]);
 
     const handleSelectPlaylist = (playlist: Playlist) => {
         setSelectedPlaylist(playlist);
@@ -56,9 +64,13 @@ export default function PlaylistManagement() {
 
     const handleCreatePlaylist = async () => {
         if (!newPlaylistName.trim()) return;
+        if (!activeOrganization) return;
         setIsSaving(true);
         try {
-            const record = await pb.collection('playlists').create({ name: newPlaylistName }) as any as Playlist;
+            const record = await pb.collection('playlists').create({ 
+                name: newPlaylistName,
+                organization: activeOrganization.id
+            }) as any as Playlist;
             setPlaylists([record, ...playlists]);
             handleSelectPlaylist(record);
             setNewPlaylistName('');
@@ -86,9 +98,13 @@ export default function PlaylistManagement() {
     };
 
     const handleOpenMediaModal = async () => {
+        if (!activeOrganization) return;
         setIsMediaModalOpen(true);
         try {
-            const media = await pb.collection('media').getFullList<Media>({ sort: '-created' });
+            const media = await pb.collection('media').getFullList<Media>({ 
+                sort: '-created',
+                filter: `organization = "${activeOrganization.id}"`
+            });
             setAvailableMedia(media);
         } catch (error) {
             console.error('Error fetching media:', error);
@@ -181,6 +197,10 @@ export default function PlaylistManagement() {
                                 <div className="flex flex-col items-center justify-center py-10 gap-3">
                                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                                     <span className="text-xs text-slate-400 font-medium">Loading...</span>
+                                </div>
+                            ) : !activeOrganization ? (
+                                <div className="text-center py-10 px-4">
+                                    <p className="text-sm text-slate-400 font-medium leading-relaxed">Selecciona una empresa.</p>
                                 </div>
                             ) : playlists.length === 0 ? (
                                 <div className="text-center py-10 px-4">
