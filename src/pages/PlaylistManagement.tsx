@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Plus, Trash2, List, Image as ImageIcon, Video, ArrowUp, ArrowDown, X } from 'lucide-react';
 import { pb, type Playlist, type PlaylistItem, type Media } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function PlaylistManagement() {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -16,6 +17,9 @@ export default function PlaylistManagement() {
     const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
     const [availableMedia, setAvailableMedia] = useState<Media[]>([]);
     const { activeOrganization } = useOrganization();
+    const { hasPermission } = useAuth();
+    
+    const canManageContent = hasPermission('manage_content');
 
     const fetchPlaylists = async () => {
         if (!activeOrganization) {
@@ -178,13 +182,15 @@ export default function PlaylistManagement() {
                     <h1 className="text-3xl font-bold text-slate-800">Playlists</h1>
                     <p className="text-slate-500 mt-1">Create sequences of content for your screen groups.</p>
                 </div>
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="btn-primary flex items-center justify-center gap-2"
-                >
-                    <Plus className="w-5 h-5" />
-                    New Playlist
-                </button>
+                {canManageContent && (
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="btn-primary flex items-center justify-center gap-2"
+                    >
+                        <Plus className="w-5 h-5" />
+                        New Playlist
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -220,15 +226,17 @@ export default function PlaylistManagement() {
                                             <List className={`w-4 h-4 flex-shrink-0 ${selectedPlaylist?.id === p.id ? 'text-white' : 'text-primary'}`} />
                                             <span className="font-bold truncate text-sm">{p.name}</span>
                                         </div>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(p.id, p.name); }}
-                                            className={`p-1.5 rounded-xl transition-all ${selectedPlaylist?.id === p.id
-                                                ? 'text-white/60 hover:bg-white/20 hover:text-white'
-                                                : 'text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100'
-                                                }`}
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
+                                        {canManageContent && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(p.id, p.name); }}
+                                                className={`p-1.5 rounded-xl transition-all ${selectedPlaylist?.id === p.id
+                                                    ? 'text-white/60 hover:bg-white/20 hover:text-white'
+                                                    : 'text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100'
+                                                    }`}
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
                                     </div>
                                 ))
                             )}
@@ -254,12 +262,14 @@ export default function PlaylistManagement() {
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={handleOpenMediaModal}
-                                    className="w-full sm:w-auto btn-primary flex items-center justify-center gap-2 py-4 px-8"
-                                >
-                                    <Plus className="w-5 h-5" /> Add Content
-                                </button>
+                                {canManageContent && (
+                                    <button
+                                        onClick={handleOpenMediaModal}
+                                        className="w-full sm:w-auto btn-primary flex items-center justify-center gap-2 py-4 px-8"
+                                    >
+                                        <Plus className="w-5 h-5" /> Add Content
+                                    </button>
+                                )}
                             </div>
 
                             <div className="space-y-4">
@@ -270,7 +280,9 @@ export default function PlaylistManagement() {
                                         </div>
                                         <h3 className="text-xl font-bold text-slate-800">Empty Playlist</h3>
                                         <p className="text-slate-500 mt-2 mb-8">Add assets from your library to build your sequence.</p>
-                                        <button onClick={handleOpenMediaModal} className="btn-primary">Add First Content</button>
+                                        {canManageContent && (
+                                            <button onClick={handleOpenMediaModal} className="btn-primary">Add First Content</button>
+                                        )}
                                     </div>
                                 ) : (
                                     items.map((item, index) => {
@@ -313,8 +325,9 @@ export default function PlaylistManagement() {
                                                             <input
                                                                 type="number"
                                                                 value={item.duration}
+                                                                disabled={!canManageContent}
                                                                 onChange={(e) => handleUpdateDuration(item.id, parseInt(e.target.value) || 1)}
-                                                                className="w-12 text-center bg-transparent font-bold text-primary outline-none"
+                                                                className="w-12 text-center bg-transparent font-bold text-primary outline-none disabled:opacity-50"
                                                                 min="1"
                                                             />
                                                             <span className="text-[11px] text-slate-400 font-bold uppercase">Sec</span>
@@ -323,28 +336,32 @@ export default function PlaylistManagement() {
                                                 )}
 
                                                 <div className="flex items-center gap-1.5 ml-auto">
-                                                    <div className="flex flex-col gap-1">
-                                                        <button
-                                                            onClick={() => moveItem(index, 'up')}
-                                                            disabled={index === 0}
-                                                            className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
-                                                        >
-                                                            <ArrowUp className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => moveItem(index, 'down')}
-                                                            disabled={index === items.length - 1}
-                                                            className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
-                                                        >
-                                                            <ArrowDown className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleDeleteItem(item.id)}
-                                                        className="p-3 rounded-2xl bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all border border-slate-100"
-                                                    >
-                                                        <Trash2 className="w-5 h-5" />
-                                                    </button>
+                                                    {canManageContent && (
+                                                        <>
+                                                            <div className="flex flex-col gap-1">
+                                                                <button
+                                                                    onClick={() => moveItem(index, 'up')}
+                                                                    disabled={index === 0}
+                                                                    className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
+                                                                >
+                                                                    <ArrowUp className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => moveItem(index, 'down')}
+                                                                    disabled={index === items.length - 1}
+                                                                    className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
+                                                                >
+                                                                    <ArrowDown className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleDeleteItem(item.id)}
+                                                                className="p-3 rounded-2xl bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all border border-slate-100"
+                                                            >
+                                                                <Trash2 className="w-5 h-5" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
