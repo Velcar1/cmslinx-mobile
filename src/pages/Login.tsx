@@ -55,10 +55,13 @@ export default function Login() {
                     )}
                     
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Email</label>
+                        <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Email</label>
                         <input 
+                            id="email"
+                            name="email"
                             type="email" 
                             required
+                            autoComplete="email"
                             placeholder="admin@l1nx.com"
                             className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 text-slate-800 outline-none transition-all"
                             value={email}
@@ -67,10 +70,13 @@ export default function Login() {
                     </div>
                     
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Contraseña</label>
+                        <label htmlFor="password" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Contraseña</label>
                         <input 
+                            id="password"
+                            name="password"
                             type="password" 
                             required
+                            autoComplete="current-password"
                             placeholder="••••••••"
                             className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 text-slate-800 outline-none transition-all"
                             value={password}
