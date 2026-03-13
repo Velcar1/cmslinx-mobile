@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo, Building2 } from 'lucide-react';
 import { pb, type Media } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function MediaLibrary() {
     const [mediaList, setMediaList] = useState<Media[]>([]);
@@ -9,7 +10,10 @@ export default function MediaLibrary() {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const { activeOrganization } = useOrganization();
+    const { hasPermission } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    const canManageContent = hasPermission('manage_content');
 
     const fetchMedia = async () => {
         if (!activeOrganization) {
@@ -103,32 +107,34 @@ export default function MediaLibrary() {
                     <p className="text-slate-500 mt-1">Manage your images and videos for screen broadcasting.</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        accept="image/*,video/mp4"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                    />
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="btn-primary flex items-center justify-center gap-2 min-w-[160px]"
-                    >
-                        {isUploading ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span>{uploadProgress}%</span>
-                            </>
-                        ) : (
-                            <>
-                                <UploadCloud className="w-5 h-5" />
-                                <span>Upload Media</span>
-                            </>
-                        )}
-                    </button>
-                </div>
+                {canManageContent && (
+                    <div className="flex items-center gap-4">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/*,video/mp4"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="btn-primary flex items-center justify-center gap-2 min-w-[160px]"
+                        >
+                            {isUploading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span>{uploadProgress}%</span>
+                                </>
+                            ) : (
+                                <>
+                                    <UploadCloud className="w-5 h-5" />
+                                    <span>Upload Media</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {isUploading && (
@@ -166,12 +172,14 @@ export default function MediaLibrary() {
                     </div>
                     <h3 className="text-xl font-bold text-slate-800">No media found</h3>
                     <p className="text-slate-500 mt-2 mb-8">Upload your first image or video to start broadcasting.</p>
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="btn-primary"
-                    >
-                        Add Media
-                    </button>
+                    {canManageContent && (
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="btn-primary"
+                        >
+                            Add Media
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -201,13 +209,15 @@ export default function MediaLibrary() {
                                     )}
 
                                     <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-[2px]">
-                                        <button
-                                            onClick={() => handleDelete(media.id, media.name)}
-                                            className="bg-white hover:bg-red-50 text-red-500 p-3 rounded-2xl shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
-                                            title="Delete media"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                        {canManageContent && (
+                                            <button
+                                                onClick={() => handleDelete(media.id, media.name)}
+                                                className="bg-white hover:bg-red-50 text-red-500 p-3 rounded-2xl shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
+                                                title="Delete media"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        )}
                                         <a
                                             href={fileUrl}
                                             target="_blank"
