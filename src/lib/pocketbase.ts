@@ -6,6 +6,23 @@ const pbUrl = import.meta.env.VITE_PB_URL || 'http://127.0.0.1:8090';
 export const pb = new PocketBase(pbUrl);
 pb.autoCancellation(false);
 
+export type UserRole = 'superadmin' | 'admin' | 'content_manager' | 'viewer';
+
+export interface User {
+    id: string;
+    email: string;
+    username: string;
+    name: string;
+    avatar: string;
+    role: UserRole;
+    organization?: string;
+    created?: string;
+    updated?: string;
+    expand?: {
+        organization?: Organization;
+    };
+}
+
 export interface Organization {
     id: string;
     name: string;

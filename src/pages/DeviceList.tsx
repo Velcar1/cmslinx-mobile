@@ -3,6 +3,7 @@ import { Loader2, Trash2, RefreshCw, Monitor, Smartphone as DeviceIcon, Pencil, 
 import { pb, type Device, type PWAConfig } from '../lib/pocketbase';
 import { Link } from 'react-router-dom';
 import { useOrganization } from '../context/OrganizationContext';
+import { useAuth } from '../context/AuthContext';
 import { Building2 } from 'lucide-react';
 
 export default function DeviceList() {
@@ -13,6 +14,9 @@ export default function DeviceList() {
     const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const { activeOrganization } = useOrganization();
+    const { hasPermission } = useAuth();
+    
+    const canManageContent = hasPermission('manage_content');
 
     const fetchConfigs = async (groupIds: string[]) => {
         if (!activeOrganization) return;
@@ -129,13 +133,15 @@ export default function DeviceList() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h1 className="text-3xl font-bold text-slate-800">Screen Management</h1>
-                <Link
-                    to="/devices/register"
-                    className="btn-primary flex items-center justify-center gap-2"
-                >
-                    <DeviceIcon className="w-5 h-5" />
-                    Pair New Screen
-                </Link>
+                {canManageContent && (
+                    <Link
+                        to="/devices/register"
+                        className="btn-primary flex items-center justify-center gap-2"
+                    >
+                        <DeviceIcon className="w-5 h-5" />
+                        Pair New Screen
+                    </Link>
+                )}
             </div>
 
             {isLoading ? (
@@ -213,13 +219,15 @@ export default function DeviceList() {
                                                     <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
                                                         {device.expand?.group?.name || 'Unassigned'}
                                                     </span>
-                                                    <button
-                                                        onClick={() => setEditingDeviceId(device.id)}
-                                                        className="p-1.5 opacity-0 group-hover/edit:opacity-100 hover:bg-white hover:shadow-sm hover:text-primary rounded-lg transition-all text-slate-400"
-                                                        title="Change group"
-                                                    >
-                                                        <Pencil className="w-3.5 h-3.5" />
-                                                    </button>
+                                                    {canManageContent && (
+                                                        <button
+                                                            onClick={() => setEditingDeviceId(device.id)}
+                                                            className="p-1.5 opacity-0 group-hover/edit:opacity-100 hover:bg-white hover:shadow-sm hover:text-primary rounded-lg transition-all text-slate-400"
+                                                            title="Change group"
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </td>
@@ -235,13 +243,15 @@ export default function DeviceList() {
                                                 >
                                                     <RefreshCw className="w-4 h-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDelete(device.id, device.name)}
-                                                    className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
-                                                    title="Unpair screen"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                {canManageContent && (
+                                                    <button
+                                                        onClick={() => handleDelete(device.id, device.name)}
+                                                        className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
+                                                        title="Unpair screen"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

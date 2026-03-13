@@ -6,35 +6,50 @@ import DeviceList from './pages/DeviceList';
 import GroupManagement from './pages/GroupManagement';
 import MediaLibrary from './pages/MediaLibrary';
 import PlaylistManagement from './pages/PlaylistManagement';
+import Login from './pages/Login';
+import UserManagement from './pages/UserManagement';
+import PrivateRoute from './components/PrivateRoute';
 
 import { OrganizationProvider } from './context/OrganizationContext';
+import { AuthProvider } from './context/AuthContext';
+
+function DashboardLayout() {
+    return (
+        <div className="flex min-h-screen bg-background text-text-primary font-sans">
+            <Navigation />
+            <div className="flex-1 flex flex-col min-h-screen">
+                <main className="flex-1 p-6 md:p-10 lg:p-12 overflow-y-auto">
+                    <div className="max-w-7xl mx-auto">
+                        <Routes>
+                            <Route path="/" element={<DashboardHome />} />
+                            <Route path="/groups" element={<GroupManagement />} />
+                            <Route path="/devices/register" element={<DeviceRegistration />} />
+                            <Route path="/devices" element={<DeviceList />} />
+                            <Route path="/media" element={<MediaLibrary />} />
+                            <Route path="/playlists" element={<PlaylistManagement />} />
+                            <Route path="/users" element={<UserManagement />} />
+                        </Routes>
+                    </div>
+                </main>
+            </div>
+        </div>
+    );
+}
 
 function App() {
   return (
-    <OrganizationProvider>
       <BrowserRouter>
-        <div className="flex min-h-screen bg-background text-text-primary font-sans">
-
-          <Navigation />
-
-          <div className="flex-1 flex flex-col min-h-screen">
-            <main className="flex-1 p-6 md:p-10 lg:p-12 overflow-y-auto">
-              <div className="max-w-7xl mx-auto">
-                <Routes>
-                  <Route path="/" element={<DashboardHome />} />
-                  <Route path="/groups" element={<GroupManagement />} />
-                  <Route path="/devices/register" element={<DeviceRegistration />} />
-                  <Route path="/devices" element={<DeviceList />} />
-                  <Route path="/media" element={<MediaLibrary />} />
-                  <Route path="/playlists" element={<PlaylistManagement />} />
-                </Routes>
-              </div>
-            </main>
-          </div>
-
-        </div>
+        <AuthProvider>
+          <OrganizationProvider>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route element={<PrivateRoute />}>
+                    <Route path="/*" element={<DashboardLayout />} />
+                </Route>
+            </Routes>
+          </OrganizationProvider>
+        </AuthProvider>
       </BrowserRouter>
-    </OrganizationProvider>
   );
 }
 

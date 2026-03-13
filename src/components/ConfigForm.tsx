@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X, List } from 'lucide-react';
 import { pb, type PWAConfig, type Media, type Playlist } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
+import { useAuth } from '../context/AuthContext';
 import { Building2 } from 'lucide-react';
 
 type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist';
@@ -47,6 +48,9 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('');
     const { activeOrganization } = useOrganization();
+    const { hasPermission } = useAuth();
+    
+    const canManageContent = hasPermission('manage_content');
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormInputs>();
 
@@ -146,6 +150,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     }, [selectedGroup, isSchedule, configToEdit, reset]);
 
     const handleOpenMediaModal = async () => {
+        if (!canManageContent) return;
         setIsMediaModalOpen(true);
         setIsLoadingMedia(true);
         try {
@@ -301,7 +306,8 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                         <select
                             value={selectedGroup}
                             onChange={(e) => setSelectedGroup(e.target.value)}
-                            className="flex-1 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-2 px-4 text-slate-800 transition-all outline-none font-medium text-lg cursor-pointer"
+                            disabled={!canManageContent}
+                            className="flex-1 bg-white border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-2 px-4 text-slate-800 transition-all outline-none font-medium text-lg cursor-pointer disabled:bg-slate-50 disabled:opacity-75"
                         >
                             {groups.map(g => (
                                 <option key={g.id} value={g.id}>{g.name}</option>
@@ -335,7 +341,8 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                             <input
                                                 type="datetime-local"
                                                 {...register("schedule_start", { required: isSchedule })}
-                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800 text-sm"
+                                                disabled={!canManageContent}
+                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800 text-sm disabled:bg-slate-50 disabled:opacity-75"
                                             />
                                         </div>
                                         <div>
@@ -343,7 +350,8 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                             <input
                                                 type="datetime-local"
                                                 {...register("schedule_end", { required: isSchedule })}
-                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800 text-sm"
+                                                disabled={!canManageContent}
+                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 outline-none transition-all text-slate-800 text-sm disabled:bg-slate-50 disabled:opacity-75"
                                             />
                                         </div>
                                     </div>
@@ -360,11 +368,11 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                         <button
                                             key={type.id}
                                             type="button"
-                                            onClick={() => setContentType(type.id)}
+                                            onClick={() => canManageContent && setContentType(type.id)}
                                             className={`flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all duration-300 ${contentType === type.id
                                                 ? 'border-primary bg-primary/5 shadow-lg scale-105'
-                                                : 'border-slate-100 hover:border-primary/30 bg-slate-50/50'
-                                                }`}
+                                                : 'border-slate-100 bg-slate-50/50'
+                                                } ${canManageContent ? 'hover:border-primary/30 cursor-pointer' : 'cursor-default opacity-80'}`}
                                         >
                                             <type.icon className={`w-8 h-8 mb-3 ${contentType === type.id ? 'text-primary' : 'text-slate-400'}`} />
                                             <span className={`text-sm font-bold block ${contentType === type.id ? 'text-primary' : 'text-slate-600'}`}>{type.label}</span>
@@ -396,7 +404,8 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                             <select
                                                 value={selectedPlaylistId}
                                                 onChange={(e) => setSelectedPlaylistId(e.target.value)}
-                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-4 px-5 text-slate-800 transition-all outline-none font-bold shadow-sm"
+                                                disabled={!canManageContent}
+                                                className="w-full bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-4 px-5 text-slate-800 transition-all outline-none font-bold shadow-sm disabled:bg-slate-50 disabled:opacity-75"
                                             >
                                                 <option value="">-- Elige una lista --</option>
                                                 {playlists.map(p => (
@@ -435,20 +444,24 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                                     </div>
                                                     <p className="text-sm font-bold text-slate-700 truncate w-full px-2" title={selectedMedia.name}>{selectedMedia.name}</p>
                                                     <div className="flex gap-2 mt-3 w-full">
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleOpenMediaModal}
-                                                            className="flex-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-bold transition-colors"
-                                                        >
-                                                            Cambiar
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setSelectedMedia(null)}
-                                                            className="px-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
+                                                        {canManageContent && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleOpenMediaModal}
+                                                                    className="flex-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-bold transition-colors"
+                                                                >
+                                                                    Cambiar
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedMedia(null)}
+                                                                    className="px-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -457,13 +470,17 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                                         <Folder className="w-8 h-8 text-primary" />
                                                     </div>
                                                     <p className="text-sm text-slate-500 mb-4 px-4">Selecciona un archivo de tu biblioteca de medios</p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleOpenMediaModal}
-                                                        className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
-                                                    >
-                                                        <Plus className="w-4 h-4" /> Abrir Galería
-                                                    </button>
+                                                    {canManageContent ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleOpenMediaModal}
+                                                            className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+                                                        >
+                                                            <Plus className="w-4 h-4" /> Abrir Galería
+                                                        </button>
+                                                    ) : (
+                                                        <p className="text-sm font-bold text-slate-400">Sin archivo seleccionado</p>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -480,7 +497,8 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                             id="redirect_url"
                                             type="url"
                                             placeholder="https://su-sitio-web.com"
-                                            className={`w-full bg-slate-50 border ${errors.redirect_url ? 'border-red-400' : 'border-slate-200'} rounded-xl py-4 px-5 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all`}
+                                            disabled={!canManageContent}
+                                            className={`w-full bg-slate-50 border ${errors.redirect_url ? 'border-red-400' : 'border-slate-200'} rounded-xl py-4 px-5 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all disabled:bg-slate-100 disabled:opacity-75`}
                                             {...register("redirect_url", { required: (contentType === 'video_interactive' || contentType === 'web_only') })}
                                         />
                                         <p className="text-[10px] text-slate-400 italic">
@@ -499,14 +517,16 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                         </div>
                                     )}
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={isSaving}
-                                    className="w-full sm:w-auto bg-primary hover:bg-[#D98201] text-white py-4 px-12 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:scale-95 transform active:scale-95"
-                                >
-                                    {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
-                                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-                                </button>
+                                {canManageContent && (
+                                    <button
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="w-full sm:w-auto bg-primary hover:bg-[#D98201] text-white py-4 px-12 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:scale-95 transform active:scale-95"
+                                    >
+                                        {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
+                                        {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                                    </button>
+                                )}
                             </div>
                         </form>
                     )}

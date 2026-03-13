@@ -4,6 +4,7 @@ import { pb, type Device, type DeviceGroup } from '../lib/pocketbase';
 import ConfigForm from '../components/ConfigForm';
 import ScheduleManagement from '../components/ScheduleManagement';
 import { useOrganization } from '../context/OrganizationContext';
+import { useAuth } from '../context/AuthContext';
 import { Building2 } from 'lucide-react';
 
 
@@ -22,6 +23,9 @@ export default function GroupManagement() {
     const [newGroupName, setNewGroupName] = useState('');
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const { activeOrganization } = useOrganization();
+    const { hasPermission } = useAuth();
+    
+    const canManageContent = hasPermission('manage_content');
 
     const fetchGroups = async () => {
         if (!activeOrganization) {
@@ -114,7 +118,7 @@ export default function GroupManagement() {
                     <h1 className="text-3xl font-bold text-slate-800">Display Groups</h1>
                     <p className="text-slate-500 mt-1">Organize your screens and push content updates.</p>
                 </div>
-                {activeOrganization && (
+                {activeOrganization && canManageContent && (
                     <button
                         onClick={() => setShowCreateModal(true)}
                         className="btn-primary flex items-center justify-center gap-2"
@@ -145,7 +149,9 @@ export default function GroupManagement() {
                     </div>
                     <h3 className="text-xl font-bold text-slate-800">No groups found</h3>
                     <p className="text-slate-500 mt-2 mb-8">Create a group to start organizing your content.</p>
-                    <button onClick={() => setShowCreateModal(true)} className="btn-primary">Create First Group</button>
+                    {canManageContent && (
+                        <button onClick={() => setShowCreateModal(true)} className="btn-primary">Create First Group</button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -163,13 +169,15 @@ export default function GroupManagement() {
                                     >
                                         <Settings className="w-5 h-5" />
                                     </button>
-                                    <button
-                                        onClick={() => handleDeleteGroup(group.id, group.name)}
-                                        className="p-2 hover:text-red-500 transition-colors"
-                                        title="Delete Group"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
+                                    {canManageContent && (
+                                        <button
+                                            onClick={() => handleDeleteGroup(group.id, group.name)}
+                                            className="p-2 hover:text-red-500 transition-colors"
+                                            title="Delete Group"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

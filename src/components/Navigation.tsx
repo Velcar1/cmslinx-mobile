@@ -1,16 +1,22 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X } from 'lucide-react';
+import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X, Users, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useOrganization } from '../context/OrganizationContext';
+import { useAuth } from '../context/AuthContext';
 import { pb } from '../lib/pocketbase';
 
 export default function Navigation() {
     const location = useLocation();
-    const { organizations, activeOrganization, setActiveOrganization, isLoading, refreshOrganizations } = useOrganization();
+    const { organizations, activeOrganization, setActiveOrganization, isLoading: isOrgLoading, refreshOrganizations } = useOrganization();
+    const { user, hasPermission, logout } = useAuth();
+    
     const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
     const [showNewOrgModal, setShowNewOrgModal] = useState(false);
     const [newOrgName, setNewOrgName] = useState('');
     const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+
+    const canManageOrgs = hasPermission('manage_organizations');
+    const canManageUsers = hasPermission('manage_users');
 
     const handleCreateOrganization = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,11 +41,12 @@ export default function Navigation() {
     };
 
     const navItems = [
-        { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/devices', label: 'Screens', icon: MonitorPlay },
-        { path: '/groups', label: 'Groups', icon: Folder },
-        { path: '/media', label: 'Media Library', icon: Image },
-        { path: '/playlists', label: 'Playlists', icon: List },
+        { path: '/', label: 'Dashboard', icon: LayoutDashboard, show: true },
+        { path: '/devices', label: 'Screens', icon: MonitorPlay, show: true },
+        { path: '/groups', label: 'Groups', icon: Folder, show: true },
+        { path: '/media', label: 'Media Library', icon: Image, show: true },
+        { path: '/playlists', label: 'Playlists', icon: List, show: true },
+        { path: '/users', label: 'Usuarios', icon: Users, show: canManageUsers },
     ];
 
     return (
@@ -56,58 +63,76 @@ export default function Navigation() {
             </div>
 
             {/* Organization Selector */}
-            <div className="px-4 mb-6 relative">
-                <button 
-                    onClick={() => setIsOrgDropdownOpen(!isOrgDropdownOpen)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 text-left group"
-                >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="p-2 rounded-lg bg-primary/20 text-primary shrink-0">
-                            <Building2 className="w-4 h-4" />
+            {canManageOrgs ? (
+                <div className="px-4 mb-6 relative">
+                    <button 
+                        onClick={() => setIsOrgDropdownOpen(!isOrgDropdownOpen)}
+                        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 text-left group"
+                    >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="p-2 rounded-lg bg-primary/20 text-primary shrink-0">
+                                <Building2 className="w-4 h-4" />
+                            </div>
+                            <div className="overflow-hidden">
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Empresa</p>
+                                <p className="text-sm font-bold text-white truncate">
+                                    {isOrgLoading ? 'Cargando...' : (activeOrganization?.name || 'Seleccionar...')}
+                                </p>
+                            </div>
                         </div>
-                        <div className="overflow-hidden">
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Empresa</p>
-                            <p className="text-sm font-bold text-white truncate">
-                                {isLoading ? 'Cargando...' : (activeOrganization?.name || 'Seleccionar...')}
-                            </p>
-                        </div>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOrgDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
+                        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOrgDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
-                {isOrgDropdownOpen && (
-                    <div className="absolute top-full left-4 right-4 mt-2 bg-[#1a1c23] border border-white/10 rounded-2xl shadow-2xl z-[60] py-2 max-h-64 overflow-y-auto overflow-x-hidden animate-in fade-in slide-in-from-top-2">
-                        {organizations.map((org) => (
+                    {isOrgDropdownOpen && (
+                        <div className="absolute top-full left-4 right-4 mt-2 bg-[#1a1c23] border border-white/10 rounded-2xl shadow-2xl z-[60] py-2 max-h-64 overflow-y-auto overflow-x-hidden animate-in fade-in slide-in-from-top-2">
+                            {organizations.map((org) => (
+                                <button
+                                    key={org.id}
+                                    onClick={() => {
+                                        setActiveOrganization(org);
+                                        setIsOrgDropdownOpen(false);
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left ${activeOrganization?.id === org.id ? 'text-primary' : 'text-slate-300'}`}
+                                >
+                                    <Building2 className="w-4 h-4 shrink-0" />
+                                    <span className="text-sm font-medium truncate">{org.name}</span>
+                                </button>
+                            ))}
+                            <div className="h-px bg-white/5 mx-2 my-2" />
                             <button
-                                key={org.id}
                                 onClick={() => {
-                                    setActiveOrganization(org);
+                                    setShowNewOrgModal(true);
                                     setIsOrgDropdownOpen(false);
                                 }}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left ${activeOrganization?.id === org.id ? 'text-primary' : 'text-slate-300'}`}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-primary hover:bg-primary/5 transition-colors text-left"
                             >
-                                <Building2 className="w-4 h-4 shrink-0" />
-                                <span className="text-sm font-medium truncate">{org.name}</span>
+                                <Plus className="w-4 h-4 shrink-0" />
+                                <span className="text-sm font-bold truncate">Nueva Empresa</span>
                             </button>
-                        ))}
-                        <div className="h-px bg-white/5 mx-2 my-2" />
-                        <button
-                            onClick={() => {
-                                setShowNewOrgModal(true);
-                                setIsOrgDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-primary hover:bg-primary/5 transition-colors text-left"
-                        >
-                            <Plus className="w-4 h-4 shrink-0" />
-                            <span className="text-sm font-bold truncate">Nueva Empresa</span>
-                        </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="px-4 mb-6">
+                    <div className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-white/5 transition-all border border-white/5 text-left opacity-90">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="p-2 rounded-lg bg-primary/20 text-primary shrink-0">
+                                <Building2 className="w-4 h-4" />
+                            </div>
+                            <div className="overflow-hidden">
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Empresa</p>
+                                <p className="text-sm font-bold text-white truncate">
+                                    {isOrgLoading ? 'Cargando...' : (activeOrganization?.name || 'Cargando...')}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Nav Items */}
             <div className="flex-1 px-4 space-y-2">
-                {navItems.map((item) => {
+                {navItems.filter(item => item.show).map((item) => {
                     const Icon = item.icon;
                     const isActive = location.pathname === item.path;
 
@@ -129,7 +154,12 @@ export default function Navigation() {
             </div>
 
             {/* Bottom Section */}
-            <div className="p-4 border-t border-white/5">
+            <div className="p-4 border-t border-white/5 space-y-2">
+                <div className="px-4 py-2 mb-2 flex flex-col">
+                    <span className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Usuario</span>
+                    <span className="text-sm text-slate-300 font-medium truncate">{user?.name || user?.email}</span>
+                </div>
+                
                 <Link
                     to="/settings"
                     className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all"
@@ -137,6 +167,14 @@ export default function Navigation() {
                     <Settings className="w-5 h-5" />
                     <span className="text-[15px]">Settings</span>
                 </Link>
+
+                <button
+                    onClick={() => logout()}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-red-400 hover:bg-red-400/10 transition-all text-left"
+                >
+                    <LogOut className="w-5 h-5" />
+                    <span className="text-[15px]">Cerrar Sesión</span>
+                </button>
             </div>
 
             {/* New Org Modal */}
