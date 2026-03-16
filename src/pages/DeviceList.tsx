@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Trash2, RefreshCw, Monitor, Smartphone as DeviceIcon, Pencil, X } from 'lucide-react';
+import { Loader2, Trash2, RefreshCw, Monitor, Smartphone as DeviceIcon, Pencil, X, AlertTriangle } from 'lucide-react';
 import { pb, type Device, type PWAConfig } from '../lib/pocketbase';
 import { Link } from 'react-router-dom';
 import { useOrganization } from '../context/OrganizationContext';
@@ -13,6 +13,8 @@ export default function DeviceList() {
     const [isLoading, setIsLoading] = useState(true);
     const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
+    const [deleteInput, setDeleteInput] = useState('');
     const { activeOrganization } = useOrganization();
     const { user, hasPermission } = useAuth();
     
@@ -110,14 +112,21 @@ export default function DeviceList() {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!window.confirm(`Are you sure you want to unpair "${name}"?`)) return;
+    const handleDelete = async (device: Device) => {
+        setDeviceToDelete(device);
+        setDeleteInput('');
+    };
+
+    const confirmDelete = async () => {
+        if (!deviceToDelete || deleteInput.toLowerCase() !== 'eliminar') return;
 
         try {
-            await pb.collection('devices').delete(id);
-            setDevices(devices.filter(d => d.id !== id));
+            await pb.collection('devices').delete(deviceToDelete.id);
+            setDevices(devices.filter(d => d.id !== deviceToDelete.id));
+            setDeviceToDelete(null);
         } catch (err) {
             console.error("Error deleting device:", err);
+            alert("Error al eliminar la pantalla");
         }
     };
 
@@ -246,7 +255,7 @@ export default function DeviceList() {
                                                 </button>
                                                 {canManageContent && (
                                                     <button
-                                                        onClick={() => handleDelete(device.id, device.name)}
+                                                        onClick={() => handleDelete(device)}
                                                         className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
                                                         title="Unpair screen"
                                                     >
@@ -259,6 +268,53 @@ export default function DeviceList() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+            {/* Delete Confirmation Modal */}
+            {deviceToDelete && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-4 mb-6 text-red-500">
+                            <div className="bg-red-50 p-3 rounded-2xl">
+                                <AlertTriangle className="w-8 h-8" />
+                            </div>
+                            <h2 className="text-2xl font-bold">Unpair Screen?</h2>
+                        </div>
+                        
+                        <p className="text-slate-600 mb-6 leading-relaxed">
+                            This action will unpair <span className="font-bold text-slate-800">"{deviceToDelete.name}"</span> and it will stop displaying content immediately.
+                        </p>
+
+                        <div className="space-y-4">
+                            <label className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                Type <span className="text-red-500">eliminar</span> to confirm
+                            </label>
+                            <input
+                                type="text"
+                                autoFocus
+                                value={deleteInput}
+                                onChange={(e) => setDeleteInput(e.target.value)}
+                                placeholder="Escribe 'eliminar' aquí"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-5 outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-bold text-center text-lg uppercase tracking-widest text-slate-800"
+                            />
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                            <button
+                                onClick={() => setDeviceToDelete(null)}
+                                className="flex-1 px-6 py-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                disabled={deleteInput.toLowerCase() !== 'eliminar'}
+                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-500/20 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                            >
+                                Unpair Screen
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
