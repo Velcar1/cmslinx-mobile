@@ -77,7 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return true; // Can do anything
                 
             case 'admin':
-                // Admins can do anything within their own organization
+                // Admins cannot manage organizations (it belongs to superadmin only)
+                if (action === 'manage_organizations') {
+                    return false;
+                }
+                // Admins can do anything else within their own organization
                 if (targetOrganizationId && targetOrganizationId !== user.organization) {
                     return false;
                 }
