@@ -3,8 +3,10 @@ import { Loader2, Plus, Trash2, List, Image as ImageIcon, Video, ArrowUp, ArrowD
 import { pb, type Playlist, type PlaylistItem, type Media } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function PlaylistManagement() {
+    const { t, language } = useLanguage();
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
     const [items, setItems] = useState<PlaylistItem[]>([]);
@@ -81,14 +83,14 @@ export default function PlaylistManagement() {
             setIsCreateModalOpen(false);
         } catch (error) {
             console.error('Error creating playlist:', error);
-            alert('Error al crear la lista.');
+            alert(language === 'es' ? 'Error al crear la lista.' : 'Error creating playlist.');
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDeletePlaylist = async (id: string, name: string) => {
-        if (!window.confirm(`¿Eliminar la lista "${name}"?`)) return;
+        if (!window.confirm(language === 'es' ? `¿Eliminar la lista "${name}"?` : `Delete playlist "${name}"?`)) return;
         try {
             await pb.collection('playlists').delete(id);
             setPlaylists(playlists.filter(p => p.id !== id));
@@ -176,11 +178,10 @@ export default function PlaylistManagement() {
     const isVideo = (filename: string) => filename.toLowerCase().endsWith('.mp4');
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Playlists</h1>
-                    <p className="text-slate-500 mt-1">Create sequences of content for your screen groups.</p>
+                    <h1 className="text-3xl font-bold text-slate-800">{t('playlists.title')}</h1>
+                    <p className="text-slate-500 mt-1">{t('playlists.subtitle')}</p>
                 </div>
                 {canManageContent && (
                     <button
@@ -188,29 +189,30 @@ export default function PlaylistManagement() {
                         className="btn-primary flex items-center justify-center gap-2"
                     >
                         <Plus className="w-5 h-5" />
-                        New Playlist
+                        {t('playlists.newPlaylist')}
                     </button>
                 )}
             </div>
 
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Sidebar: Playlists List */}
-                <aside className="lg:col-span-1 space-y-4">
+                 <aside className="lg:col-span-1 space-y-4">
                     <div className="card-premium h-full min-h-[500px] flex flex-col">
-                        <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-6">Your Playlists</h2>
+                        <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-6">{t('playlists.yourPlaylists')}</h2>
                         <div className="flex flex-col gap-2 flex-1">
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center py-10 gap-3">
                                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                                     <span className="text-xs text-slate-400 font-medium">Loading...</span>
                                 </div>
-                            ) : !activeOrganization ? (
+                             ) : !activeOrganization ? (
                                 <div className="text-center py-10 px-4">
-                                    <p className="text-sm text-slate-400 font-medium leading-relaxed">Selecciona una empresa.</p>
+                                    <p className="text-sm text-slate-400 font-medium leading-relaxed">{language === 'es' ? 'Selecciona una empresa.' : 'Select a company.'}</p>
                                 </div>
                             ) : playlists.length === 0 ? (
                                 <div className="text-center py-10 px-4">
-                                    <p className="text-sm text-slate-400 font-medium leading-relaxed">No playlists created yet.</p>
+                                    <p className="text-sm text-slate-400 font-medium leading-relaxed">{t('playlists.noPlaylists')}</p>
                                 </div>
                             ) : (
                                 playlists.map(p => (
@@ -253,37 +255,37 @@ export default function PlaylistManagement() {
                                     <div className="bg-primary/10 p-4 rounded-2xl text-primary">
                                         <List className="w-7 h-7" />
                                     </div>
-                                    <div>
+                                     <div>
                                         <h2 className="text-2xl font-bold text-slate-800">{selectedPlaylist.name}</h2>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} Elements</span>
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} {t('playlists.elements')}</span>
                                             <span className="w-1 h-1 rounded-full bg-slate-300" />
-                                            <span className="text-xs font-medium text-slate-400 italic">Sequence order</span>
+                                            <span className="text-xs font-medium text-slate-400 italic">{t('playlists.sequenceOrder')}</span>
                                         </div>
                                     </div>
                                 </div>
                                 {canManageContent && (
-                                    <button
+                                     <button
                                         onClick={handleOpenMediaModal}
                                         className="w-full sm:w-auto btn-primary flex items-center justify-center gap-2 py-4 px-8"
                                     >
-                                        <Plus className="w-5 h-5" /> Add Content
+                                        <Plus className="w-5 h-5" /> {t('playlists.addContent')}
                                     </button>
                                 )}
                             </div>
 
                             <div className="space-y-4">
                                 {items.length === 0 ? (
-                                    <div className="card-premium flex flex-col items-center justify-center py-24 bg-slate-50/50 border-dashed">
-                                        <div className="bg-slate-200 p-6 rounded-3xl mb-4">
+                                    <div className="card-premium flex flex-col items-center justify-center py-24 bg-slate-50/50 border-dashed">                                         <div className="bg-slate-200 p-6 rounded-3xl mb-4">
                                             <Plus className="w-12 h-12 text-slate-400" />
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-800">Empty Playlist</h3>
-                                        <p className="text-slate-500 mt-2 mb-8">Add assets from your library to build your sequence.</p>
+                                        <h3 className="text-xl font-bold text-slate-800">{t('playlists.emptyPlaylist')}</h3>
+                                        <p className="text-slate-500 mt-2 mb-8">{t('playlists.emptySubtitle')}</p>
                                         {canManageContent && (
-                                            <button onClick={handleOpenMediaModal} className="btn-primary">Add First Content</button>
+                                            <button onClick={handleOpenMediaModal} className="btn-primary">{t('playlists.addFirst')}</button>
                                         )}
                                     </div>
+
                                 ) : (
                                     items.map((item, index) => {
                                         const media = item.expand?.media;
@@ -305,32 +307,32 @@ export default function PlaylistManagement() {
 
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-bold text-slate-800 truncate mb-2">{media.name}</p>
-                                                    <div className="flex items-center gap-3">
-                                                        {videoFile ? (
+                                                    <div className="flex items-center gap-3">                                                         {videoFile ? (
                                                             <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-100">
-                                                                <Video className="w-3 h-3" /> Video
+                                                                <Video className="w-3 h-3" /> {t('media.typeVideo')}
                                                             </span>
                                                         ) : (
                                                             <span className="flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-emerald-100">
-                                                                <ImageIcon className="w-3 h-3" /> Image
+                                                                <ImageIcon className="w-3 h-3" /> {t('media.typeImage')}
                                                             </span>
                                                         )}
+
                                                     </div>
                                                 </div>
 
-                                                {!videoFile && (
+                                                 {!videoFile && (
                                                     <div className="hidden sm:flex flex-col items-center gap-1 bg-slate-50 p-3 rounded-2xl border border-slate-100 min-w-[100px]">
-                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</label>
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('playlists.duration')}</label>
                                                         <div className="flex items-center gap-2">
                                                             <input
                                                                 type="number"
                                                                 value={item.duration}
                                                                 disabled={!canManageContent}
                                                                 onChange={(e) => handleUpdateDuration(item.id, parseInt(e.target.value) || 1)}
-                                                                className="w-12 text-center bg-transparent font-bold text-primary outline-none disabled:opacity-50"
+                                                                 className="w-12 text-center bg-transparent font-bold text-primary outline-none disabled:opacity-50"
                                                                 min="1"
                                                             />
-                                                            <span className="text-[11px] text-slate-400 font-bold uppercase">Sec</span>
+                                                            <span className="text-[11px] text-slate-400 font-bold uppercase">{t('playlists.sec')}</span>
                                                         </div>
                                                     </div>
                                                 )}
@@ -370,45 +372,45 @@ export default function PlaylistManagement() {
                             </div>
                         </div>
                     ) : (
-                        <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
+                         <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
                             <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-300">
                                 <List className="w-16 h-16" />
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-800">Select a Playlist</h3>
-                            <p className="text-slate-500 mt-2 max-w-sm">Choose a list from the sidebar or create a new one to manage its sequence.</p>
+                            <h3 className="text-2xl font-bold text-slate-800">{t('playlists.selectPlaylist')}</h3>
+                            <p className="text-slate-500 mt-2 max-w-sm">{t('playlists.selectSubtitle')}</p>
                         </div>
                     )}
                 </main>
             </div>
 
             {/* Create Playlist Modal */}
-            {isCreateModalOpen && (
+             {isCreateModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800">New Playlist</h2>
+                            <h2 className="text-2xl font-bold text-slate-800">{t('playlists.newPlaylist')}</h2>
                             <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                                 <X className="w-6 h-6" />
                             </button>
-                        </div>
+                         </div>
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Playlist Name</label>
+                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t('playlists.playlistName')}</label>
                                 <input
                                     type="text"
-                                    autoFocus
+                                     autoFocus
                                     value={newPlaylistName}
                                     onChange={(e) => setNewPlaylistName(e.target.value)}
-                                    placeholder="e.g. Sales Promos, Welcome Loop..."
+                                    placeholder={language === 'es' ? "Ej. Promociones, Bienvenida..." : "e.g. Sales Promos, Welcome Loop..."}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 font-bold"
                                 />
                             </div>
                             <button
-                                onClick={handleCreatePlaylist}
+                                 onClick={handleCreatePlaylist}
                                 disabled={!newPlaylistName.trim() || isSaving}
                                 className="w-full btn-primary flex justify-center py-4"
                             >
-                                {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : "Create Playlist"}
+                                {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : t('playlists.newPlaylist')}
                             </button>
                         </div>
                     </div>
@@ -419,10 +421,10 @@ export default function PlaylistManagement() {
             {isMediaModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-800">Add Content</h3>
-                                <p className="text-slate-500 font-medium mt-1">Select an asset to add to your sequence.</p>
+                                <h3 className="text-2xl font-bold text-slate-800">{t('playlists.addContent')}</h3>
+                                <p className="text-slate-500 font-medium mt-1">{language === 'es' ? 'Selecciona un archivo para añadir a tu secuencia.' : 'Select an asset to add to your sequence.'}</p>
                             </div>
                             <button
                                 onClick={() => setIsMediaModalOpen(false)}

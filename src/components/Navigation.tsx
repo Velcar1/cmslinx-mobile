@@ -3,12 +3,14 @@ import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2,
 import { useState } from 'react';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { pb } from '../lib/pocketbase';
 
 export default function Navigation() {
     const location = useLocation();
     const { organizations, activeOrganization, setActiveOrganization, isLoading: isOrgLoading, refreshOrganizations } = useOrganization();
     const { user, hasPermission, logout } = useAuth();
+    const { t } = useLanguage();
     
     const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
     const [showNewOrgModal, setShowNewOrgModal] = useState(false);
@@ -41,12 +43,12 @@ export default function Navigation() {
     };
 
     const navItems = [
-        { path: '/', label: 'Dashboard', icon: LayoutDashboard, show: true },
-        { path: '/devices', label: 'Screens', icon: MonitorPlay, show: true },
-        { path: '/groups', label: 'Groups', icon: Folder, show: true },
-        { path: '/media', label: 'Media Library', icon: Image, show: true },
-        { path: '/playlists', label: 'Playlists', icon: List, show: true },
-        { path: '/users', label: 'Usuarios', icon: Users, show: canManageUsers },
+        { path: '/', label: t('common.dashboard'), icon: LayoutDashboard, show: true },
+        { path: '/devices', label: t('common.screens'), icon: MonitorPlay, show: true },
+        { path: '/groups', label: t('common.groups'), icon: Folder, show: true },
+        { path: '/media', label: t('common.media'), icon: Image, show: true },
+        { path: '/playlists', label: t('common.playlists'), icon: List, show: true },
+        { path: '/users', label: t('common.users'), icon: Users, show: canManageUsers },
     ];
 
     return (
@@ -74,9 +76,9 @@ export default function Navigation() {
                                 <Building2 className="w-4 h-4" />
                             </div>
                             <div className="overflow-hidden">
-                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Empresa</p>
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">{t('common.status').toLowerCase() === 'estado' ? 'Empresa' : 'Company'}</p>
                                 <p className="text-sm font-bold text-white truncate">
-                                    {isOrgLoading ? 'Cargando...' : (activeOrganization?.name || 'Seleccionar...')}
+                                    {isOrgLoading ? t('common.loading') : (activeOrganization?.name || t('settings.selectLanguage'))}
                                 </p>
                             </div>
                         </div>
@@ -99,7 +101,7 @@ export default function Navigation() {
                                 </button>
                             ))}
                             <div className="h-px bg-white/5 mx-2 my-2" />
-                            <button
+                             <button
                                 onClick={() => {
                                     setShowNewOrgModal(true);
                                     setIsOrgDropdownOpen(false);
@@ -107,7 +109,7 @@ export default function Navigation() {
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-primary hover:bg-primary/5 transition-colors text-left"
                             >
                                 <Plus className="w-4 h-4 shrink-0" />
-                                <span className="text-sm font-bold truncate">Nueva Empresa</span>
+                                <span className="text-sm font-bold truncate">{t('common.create')} {t('common.status').toLowerCase() === 'estado' ? 'Empresa' : 'Company'}</span>
                             </button>
                         </div>
                     )}
@@ -153,19 +155,19 @@ export default function Navigation() {
                 })}
             </div>
 
-            {/* Bottom Section */}
+             {/* Bottom Section */}
             <div className="p-4 border-t border-white/5 space-y-2">
                 <div className="px-4 py-2 mb-2 flex flex-col">
-                    <span className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Usuario</span>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">{t('common.user')}</span>
                     <span className="text-sm text-slate-300 font-medium truncate">{user?.name || user?.email}</span>
                 </div>
                 
-                <Link
+                 <Link
                     to="/settings"
                     className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all"
                 >
                     <Settings className="w-5 h-5" />
-                    <span className="text-[15px]">Settings</span>
+                    <span className="text-[15px]">{t('common.settings')}</span>
                 </Link>
 
                 <button
@@ -173,7 +175,7 @@ export default function Navigation() {
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-red-400 hover:bg-red-400/10 transition-all text-left"
                 >
                     <LogOut className="w-5 h-5" />
-                    <span className="text-[15px]">Cerrar Sesión</span>
+                    <span className="text-[15px]">{t('common.logout')}</span>
                 </button>
             </div>
 

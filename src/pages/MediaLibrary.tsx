@@ -3,8 +3,10 @@ import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo, Bui
 import { pb, type Media } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function MediaLibrary() {
+    const { t, language } = useLanguage();
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
@@ -47,7 +49,7 @@ export default function MediaLibrary() {
         setUploadProgress(0);
 
         try {
-            if (!activeOrganization) throw new Error("No hay una organización seleccionada.");
+            if (!activeOrganization) throw new Error(language === 'es' ? "No hay una organización seleccionada." : "No organization selected.");
 
             const formData = new FormData();
             formData.append('file', file);
@@ -72,7 +74,7 @@ export default function MediaLibrary() {
 
         } catch (error) {
             console.error('Error uploading file:', error);
-            alert('Error al subir el archivo.');
+            alert(language === 'es' ? 'Error al subir el archivo.' : 'Error uploading file.');
             setIsUploading(false);
             setUploadProgress(0);
         } finally {
@@ -82,15 +84,15 @@ export default function MediaLibrary() {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (window.confirm(`¿Estás seguro de eliminar el archivo "${name}"? Esta acción no se puede deshacer y podría afectar las pantallas configuradas con este archivo.`)) {
+     const handleDelete = async (id: string, name: string) => {
+        if (window.confirm(t('media.deleteConfirm').replace('{name}', name))) {
             try {
                 // Set loading state for specific item could be done, but a full refresh is safer for now
                 await pb.collection('media').delete(id);
                 fetchMedia();
-            } catch (error) {
+             } catch (error) {
                 console.error("Error deleting media:", error);
-                alert("Error al eliminar el archivo.");
+                alert(language === 'es' ? "Error al eliminar el archivo." : "Error deleting file.");
             }
         }
     };
@@ -101,10 +103,10 @@ export default function MediaLibrary() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Media Library</h1>
-                    <p className="text-slate-500 mt-1">Manage your images and videos for screen broadcasting.</p>
+                    <h1 className="text-3xl font-bold text-slate-800">{t('media.title')}</h1>
+                    <p className="text-slate-500 mt-1">{t('media.subtitle')}</p>
                 </div>
 
                 {canManageContent && (
@@ -126,10 +128,10 @@ export default function MediaLibrary() {
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                     <span>{uploadProgress}%</span>
                                 </>
-                            ) : (
+                             ) : (
                                 <>
                                     <UploadCloud className="w-5 h-5" />
-                                    <span>Upload Media</span>
+                                    <span>{t('media.upload')}</span>
                                 </>
                             )}
                         </button>
@@ -137,10 +139,10 @@ export default function MediaLibrary() {
                 )}
             </div>
 
-            {isUploading && (
+             {isUploading && (
                 <div className="card-premium border-primary/20 bg-primary/5 py-4 animate-in slide-in-from-top-4">
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-bold text-primary italic">Uploading asset...</span>
+                        <span className="text-sm font-bold text-primary italic">{t('media.uploading')}</span>
                         <span className="text-sm font-bold text-primary">{uploadProgress}%</span>
                     </div>
                     <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
@@ -152,32 +154,34 @@ export default function MediaLibrary() {
                 </div>
             )}
 
-            {isLoading ? (
+             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    <p className="text-slate-500 font-medium">Loading library...</p>
+                    <p className="text-slate-500 font-medium">{t('media.loading')}</p>
                 </div>
-            ) : !activeOrganization ? (
-                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">
-                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
-                        <Building2 className="w-12 h-12" />
+             ) : !activeOrganization ? (
+                <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
+                    <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-400">
+                        <Building2 className="w-16 h-16" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800">No hay empresa seleccionada</h3>
-                    <p className="text-slate-500 mt-2">Por favor, selecciona o crea una empresa en el menú lateral.</p>
+                    <h2 className="text-2xl font-bold text-slate-800">{language === 'es' ? 'Selecciona una empresa' : 'Select a company'}</h2>
+                    <p className="text-slate-500 mt-2 max-w-md mx-auto">
+                        {language === 'es' ? 'Por favor, selecciona o crea una empresa en el menú lateral para gestionar tu biblioteca.' : 'Please select or create a company in the sidebar menu to manage your library.'}
+                    </p>
                 </div>
-            ) : mediaList.length === 0 ? (
+             ) : mediaList.length === 0 ? (
                 <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">
                     <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
                         <ImageIcon className="w-12 h-12" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800">No media found</h3>
-                    <p className="text-slate-500 mt-2 mb-8">Upload your first image or video to start broadcasting.</p>
+                    <h3 className="text-xl font-bold text-slate-800">{t('media.noMedia')}</h3>
+                    <p className="text-slate-500 mt-2 mb-8">{t('media.uploadFirst')}</p>
                     {canManageContent && (
-                        <button
+                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="btn-primary"
                         >
-                            Add Media
+                            {t('media.addMedia')}
                         </button>
                     )}
                 </div>
@@ -193,17 +197,17 @@ export default function MediaLibrary() {
                                     {videoFile ? (
                                         <>
                                             <video src={`${fileUrl}#t=0.1`} className="w-full h-full object-cover" muted preload="metadata" />
-                                            <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-md rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border border-white/10">
+                                             <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-md rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border border-white/10">
                                                 <Video className="w-3.5 h-3.5 text-white" />
-                                                <span className="text-[10px] text-white font-bold uppercase tracking-wider">Video</span>
+                                                <span className="text-[10px] text-white font-bold uppercase tracking-wider">{t('media.typeVideo')}</span>
                                             </div>
                                         </>
                                     ) : (
                                         <>
                                             <img src={fileUrl} alt={media.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                            <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border border-white/20">
+                                             <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border border-white/20">
                                                 <ImageIcon className="w-3.5 h-3.5 text-slate-800" />
-                                                <span className="text-[10px] text-slate-800 font-bold uppercase tracking-wider">Image</span>
+                                                <span className="text-[10px] text-slate-800 font-bold uppercase tracking-wider">{t('media.typeImage')}</span>
                                             </div>
                                         </>
                                     )}

@@ -8,10 +8,12 @@ import MediaLibrary from './pages/MediaLibrary';
 import PlaylistManagement from './pages/PlaylistManagement';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
+import Settings from './pages/Settings';
 import PrivateRoute from './components/PrivateRoute';
 
 import { OrganizationProvider } from './context/OrganizationContext';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 function DashboardLayout() {
     return (
@@ -28,6 +30,7 @@ function DashboardLayout() {
                             <Route path="/media" element={<MediaLibrary />} />
                             <Route path="/playlists" element={<PlaylistManagement />} />
                             <Route path="/users" element={<UserManagement />} />
+                            <Route path="/settings" element={<Settings />} />
                         </Routes>
                     </div>
                 </main>
@@ -41,12 +44,14 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <OrganizationProvider>
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route element={<PrivateRoute />}>
-                    <Route path="/*" element={<DashboardLayout />} />
-                </Route>
-            </Routes>
+            <LanguageProvider>
+              <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route element={<PrivateRoute />}>
+                      <Route path="/*" element={<DashboardLayout />} />
+                  </Route>
+              </Routes>
+            </LanguageProvider>
           </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>

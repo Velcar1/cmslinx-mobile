@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Loader2, LogIn, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Login() {
+    const { t, language } = useLanguage();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -26,7 +28,7 @@ export default function Login() {
             // navigate is handled inside login()
         } catch (err: any) {
             console.error('Login error:', err);
-            setError('Credenciales incorrectas o problema de conexión.');
+            setError(t('login.error'));
         } finally {
             setIsSubmitting(false);
         }
@@ -43,8 +45,8 @@ export default function Login() {
                     </div>
                 </div>
                 
-                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">Bienvenido</h1>
-                <p className="text-slate-500 mb-8">Inicia sesión para gestionar tus pantallas</p>
+                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">{t('login.welcome')}</h1>
+                <p className="text-slate-500 mb-8">{t('login.subtitle')}</p>
                 
                 <form onSubmit={handleSubmit} className="space-y-5 text-left">
                     {error && (
@@ -55,7 +57,7 @@ export default function Login() {
                     )}
                     
                     <div className="space-y-2">
-                        <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Email</label>
+                        <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">{t('login.email')}</label>
                         <input 
                             id="email"
                             name="email"
@@ -70,7 +72,7 @@ export default function Login() {
                     </div>
                     
                     <div className="space-y-2">
-                        <label htmlFor="password" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Contraseña</label>
+                        <label htmlFor="password" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">{language === 'es' ? 'Contraseña' : 'Password'}</label>
                         <input 
                             id="password"
                             name="password"
@@ -93,7 +95,7 @@ export default function Login() {
                             <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                             <>
-                                <LogIn className="w-5 h-5" /> Ingresar
+                                <LogIn className="w-5 h-5" /> {t('login.enter')}
                             </>
                         )}
                     </button>

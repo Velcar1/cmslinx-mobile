@@ -5,11 +5,13 @@ import ConfigForm from '../components/ConfigForm';
 import ScheduleManagement from '../components/ScheduleManagement';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Building2 } from 'lucide-react';
 
 
 
 export default function GroupManagement() {
+    const { t, language } = useLanguage();
     const [groups, setGroups] = useState<DeviceGroup[]>([]);
     const [screenCounts, setScreenCounts] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -94,20 +96,20 @@ export default function GroupManagement() {
             setShowCreateModal(false);
             fetchGroups();
         } catch (err: any) {
-            setStatus({ type: 'error', message: "Error creating group." });
+            setStatus({ type: 'error', message: language === 'es' ? "Error al crear el grupo." : "Error creating group." });
         } finally {
             setIsCreating(false);
         }
     };
 
-    const handleDeleteGroup = async (id: string, name: string) => {
-        if (!window.confirm(`Are you sure you want to delete "${name}"? Registered screens in this group may stop working correctly.`)) return;
+    const handleDeleteGroup = async (id: string) => {
+        if (!window.confirm(t('groups.deleteConfirm'))) return;
 
         try {
             await pb.collection('device_groups').delete(id);
             setGroups(groups.filter(g => g.id !== id));
         } catch (err: any) {
-            alert("Could not delete group. It may have dependencies.");
+            alert(language === 'es' ? "No se pudo eliminar el grupo. Puede tener dependencias." : "Could not delete group. It may have dependencies.");
         }
     };
 
@@ -115,8 +117,8 @@ export default function GroupManagement() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Display Groups</h1>
-                    <p className="text-slate-500 mt-1">Organize your screens and push content updates.</p>
+                    <h1 className="text-3xl font-bold text-slate-800">{t('groups.title')}</h1>
+                    <p className="text-slate-500 mt-1">{t('groups.subtitle')}</p>
                 </div>
                 {activeOrganization && canManageContent && (
                     <button
@@ -124,7 +126,7 @@ export default function GroupManagement() {
                         className="btn-primary flex items-center justify-center gap-2"
                     >
                         <Plus className="w-5 h-5" />
-                        New Group
+                        {t('groups.newGroup')}
                     </button>
                 )}
             </div>
@@ -132,25 +134,27 @@ export default function GroupManagement() {
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    <p className="text-slate-500 font-medium tracking-wide">Cargando grupos...</p>
+                    <p className="text-slate-500 font-medium tracking-wide">{t('common.loading')}</p>
                 </div>
             ) : !activeOrganization ? (
-                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed text-center">
-                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
-                        <Building2 className="w-12 h-12" />
+                <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
+                    <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-400">
+                        <Building2 className="w-16 h-16" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800">No hay empresa seleccionada</h3>
-                    <p className="text-slate-500 mt-2">Por favor, selecciona o crea una empresa en el menú lateral.</p>
+                    <h2 className="text-2xl font-bold text-slate-800">{language === 'es' ? 'Selecciona una empresa' : 'Select a company'}</h2>
+                    <p className="text-slate-500 mt-2 max-w-md mx-auto">
+                        {language === 'es' ? 'Por favor, selecciona o crea una empresa en el menú lateral.' : 'Please select or create a company in the sidebar menu.'}
+                    </p>
                 </div>
             ) : groups.length === 0 ? (
                 <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">
                     <div className="bg-slate-200 p-6 rounded-3xl mb-4">
                         <Folder className="w-12 h-12 text-slate-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800">No groups found</h3>
-                    <p className="text-slate-500 mt-2 mb-8">Create a group to start organizing your content.</p>
+                    <h3 className="text-xl font-bold text-slate-800">{t('groups.noGroups')}</h3>
+                    <p className="text-slate-500 mt-2 mb-8">{language === 'es' ? 'Crea un grupo para empezar a organizar tu contenido.' : 'Create a group to start organizing your content.'}</p>
                     {canManageContent && (
-                        <button onClick={() => setShowCreateModal(true)} className="btn-primary">Create First Group</button>
+                        <button onClick={() => setShowCreateModal(true)} className="btn-primary">{t('groups.createFirst')}</button>
                     )}
                 </div>
             ) : (
@@ -171,7 +175,7 @@ export default function GroupManagement() {
                                     </button>
                                     {canManageContent && (
                                         <button
-                                            onClick={() => handleDeleteGroup(group.id, group.name)}
+                                            onClick={() => handleDeleteGroup(group.id)}
                                             className="p-2 hover:text-red-500 transition-colors"
                                             title="Delete Group"
                                         >
@@ -188,14 +192,14 @@ export default function GroupManagement() {
                                     className="flex items-center gap-2 text-slate-400 text-sm hover:text-primary transition-colors group/count"
                                 >
                                     <Monitor className="w-4 h-4 group-hover/count:scale-110 transition-transform" />
-                                    <span className="hover:underline decoration-primary/30 underline-offset-4">{screenCounts[group.id] || 0} screens assigned</span>
+                                    <span className="hover:underline decoration-primary/30 underline-offset-4">{screenCounts[group.id] || 0} {t('groups.screensAssigned')}</span>
                                 </button>
                             </div>
 
                             <div className="pt-6 border-t border-slate-50 mt-auto flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-wider">
                                     <PlayCircle className="w-4 h-4" />
-                                    <span>Active Content</span>
+                                    <span>{t('groups.activeContent')}</span>
                                 </div>
                             </div>
                         </div>
@@ -208,7 +212,7 @@ export default function GroupManagement() {
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800">New Group</h2>
+                            <h2 className="text-2xl font-bold text-slate-800">{t('groups.newGroup')}</h2>
                             <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">
                                 <X className="w-6 h-6" />
                             </button>
@@ -220,13 +224,13 @@ export default function GroupManagement() {
                                 </div>
                             )}
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Group Name</label>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">{t('groups.groupName')}</label>
                                 <input
                                     type="text"
                                     autoFocus
                                     value={newGroupName}
                                     onChange={(e) => setNewGroupName(e.target.value)}
-                                    placeholder="e.g. Lobby Entrance, Floor 2..."
+                                    placeholder={language === 'es' ? "Ej. Entrada, Piso 2..." : "e.g. Lobby Entrance, Floor 2..."}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800"
                                 />
                             </div>
@@ -235,7 +239,7 @@ export default function GroupManagement() {
                                 disabled={isCreating || !newGroupName.trim()}
                                 className="w-full btn-primary flex justify-center py-4"
                             >
-                                {isCreating ? <Loader2 className="w-6 h-6 animate-spin" /> : "Create Group"}
+                                {isCreating ? <Loader2 className="w-6 h-6 animate-spin" /> : t('groups.newGroup')}
                             </button>
                         </form>
                     </div>
@@ -248,7 +252,7 @@ export default function GroupManagement() {
                     <div className="bg-white w-full max-w-2xl h-full shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto">
                         <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-8 py-6 border-b border-slate-100 flex items-center justify-between">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800">Group Settings</h2>
+                                <h2 className="text-2xl font-bold text-slate-800">{t('groups.settings')}</h2>
                                 <p className="text-slate-500 font-medium">
                                     {groups.find(g => g.id === selectedGroupId)?.name}
                                 </p>
@@ -258,7 +262,7 @@ export default function GroupManagement() {
                                     onClick={() => setActiveTab('base')}
                                     className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${activeTab === 'base' ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
                                 >
-                                    <LayoutGrid className="w-4 h-4" /> Base
+                                    <LayoutGrid className="w-4 h-4" /> {language === 'es' ? 'Base' : 'Base'}
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('schedules')}
@@ -300,7 +304,7 @@ export default function GroupManagement() {
                                     <Monitor className="w-6 h-6 text-primary" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-slate-800">Assigned Screens</h2>
+                                    <h2 className="text-2xl font-bold text-slate-800">{t('groups.assignedScreens')}</h2>
                                     <p className="text-slate-500 font-medium">{viewingScreensGroup.name}</p>
                                 </div>
                             </div>
@@ -316,15 +320,15 @@ export default function GroupManagement() {
                             {isLoadingScreens ? (
                                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                                    <p className="text-slate-500 font-medium tracking-wide">Fetching assigned screens...</p>
+                                    <p className="text-slate-500 font-medium tracking-wide">{language === 'es' ? 'Cargando pantallas...' : 'Fetching assigned screens...'}</p>
                                 </div>
                             ) : groupScreens.length === 0 ? (
                                 <div className="text-center py-20">
                                     <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <Smartphone className="w-8 h-8 text-slate-300" />
                                     </div>
-                                    <p className="font-bold text-slate-800 text-lg">No screens assigned</p>
-                                    <p className="text-slate-500 mt-1">This group doesn't have any registered screens yet.</p>
+                                    <p className="font-bold text-slate-800 text-lg">{language === 'es' ? 'No hay pantallas asignadas' : 'No screens assigned'}</p>
+                                    <p className="text-slate-500 mt-1">{language === 'es' ? 'Este grupo no tiene pantallas registradas aún.' : "This group doesn't have any registered screens yet."}</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 gap-4 pb-4">
@@ -339,13 +343,13 @@ export default function GroupManagement() {
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className={`w-1.5 h-1.5 rounded-full ${screen.is_registered ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                                                            {screen.is_registered ? 'Registered' : 'Pending'}
+                                                            {screen.is_registered ? t('common.registered') : (language === 'es' ? 'Pendiente' : 'Pending')}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-end">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pairing Code</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('screens.pairingCode')}</span>
                                                 <code className="bg-white px-2 py-1 rounded-lg border border-slate-200 text-sm font-mono font-bold text-primary">
                                                     {screen.pairing_code}
                                                 </code>
@@ -361,7 +365,7 @@ export default function GroupManagement() {
                                 onClick={() => setViewingScreensGroup(null)}
                                 className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg"
                             >
-                                Close List
+                                {language === 'es' ? 'Cerrar Lista' : 'Close List'}
                             </button>
                         </div>
                     </div>

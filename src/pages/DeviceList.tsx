@@ -4,9 +4,11 @@ import { pb, type Device, type PWAConfig } from '../lib/pocketbase';
 import { Link } from 'react-router-dom';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Building2 } from 'lucide-react';
 
 export default function DeviceList() {
+    const { t, language } = useLanguage();
     const [devices, setDevices] = useState<Device[]>([]);
     const [configs, setConfigs] = useState<Record<string, PWAConfig>>({});
     const [groups, setGroups] = useState<{ id: string, name: string }[]>([]);
@@ -142,14 +144,14 @@ export default function DeviceList() {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h1 className="text-3xl font-bold text-slate-800">Screen Management</h1>
+                <h1 className="text-3xl font-bold text-slate-800">{t('screens.title')}</h1>
                 {isSuperadmin && (
                     <Link
                         to="/devices/register"
                         className="btn-primary flex items-center justify-center gap-2"
                     >
                         <DeviceIcon className="w-5 h-5" />
-                        Pair New Screen
+                        {t('screens.pairNew')}
                     </Link>
                 )}
             </div>
@@ -157,24 +159,32 @@ export default function DeviceList() {
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    <p className="text-slate-500 font-medium">Loading screens...</p>
+                    <p className="text-slate-500 font-medium">{t('common.loading')}</p>
                 </div>
             ) : !activeOrganization ? (
-                <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed text-center">
-                    <div className="bg-slate-200 p-6 rounded-3xl mb-4 text-slate-400">
-                        <Building2 className="w-12 h-12" />
+                <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
+                    <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-400">
+                        <Building2 className="w-16 h-16" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800">No hay empresa seleccionada</h3>
-                    <p className="text-slate-500 mt-2">Por favor, selecciona o crea una empresa en el menú lateral.</p>
+                    <h2 className="text-3xl font-bold text-slate-800">{language === 'es' ? 'Selecciona una empresa' : 'Select a company'}</h2>
+                    <p className="text-slate-500 mt-2 max-w-md mx-auto">
+                        {language === 'es' 
+                            ? 'Por favor, selecciona o crea una empresa en el menú lateral para gestionar tus pantallas.'
+                            : 'Please select or create a company in the sidebar menu to manage your screens.'}
+                    </p>
                 </div>
             ) : devices.length === 0 ? (
                 <div className="card-premium flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed">
                     <div className="bg-slate-200 p-6 rounded-3xl mb-4">
                         <Monitor className="w-12 h-12 text-slate-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800">No screens paired</h3>
-                    <p className="text-slate-500 mt-2 mb-8">Pair your first device to start broadcasting content.</p>
-                    {isSuperadmin && <Link to="/devices/register" className="btn-primary">Get Started</Link>}
+                    <h3 className="text-xl font-bold text-slate-800">{language === 'es' ? 'No hay pantallas vinculadas' : 'No screens paired'}</h3>
+                    <p className="text-slate-500 mt-2 mb-8">
+                        {language === 'es' 
+                            ? 'Vincula tu primer dispositivo para empezar a transmitir contenido.'
+                            : 'Pair your first device to start broadcasting content.'}
+                    </p>
+                    {isSuperadmin && <Link to="/devices/register" className="btn-primary">{language === 'es' ? 'Empezar' : 'Get Started'}</Link>}
                 </div>
             ) : (
                 <div className="card-premium overflow-hidden !p-0">
@@ -182,11 +192,11 @@ export default function DeviceList() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-100">
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Screen Name</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Group</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Now Playing</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('common.status')}</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('screens.screenName')}</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('common.groups')}</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('screens.nowPlaying')}</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">{t('common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -195,7 +205,7 @@ export default function DeviceList() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Online</span>
+                                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">{t('common.online')}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -227,7 +237,7 @@ export default function DeviceList() {
                                             ) : (
                                                 <div className="flex items-center gap-2 group/edit">
                                                     <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
-                                                        {device.expand?.group?.name || 'Unassigned'}
+                                                        {device.expand?.group?.name || t('common.unassigned')}
                                                     </span>
                                                     {canManageContent && (
                                                         <button
@@ -257,7 +267,7 @@ export default function DeviceList() {
                                                     <button
                                                         onClick={() => handleDelete(device)}
                                                         className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
-                                                        title="Unpair screen"
+                                                        title={t('screens.unpair')}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -275,27 +285,29 @@ export default function DeviceList() {
             {deviceToDelete && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center gap-4 mb-6 text-red-500">
-                            <div className="bg-red-50 p-3 rounded-2xl">
+                        <div className="flex items-center gap-4 mb-6 text-red-500">                             <div className="bg-red-50 p-3 rounded-2xl">
                                 <AlertTriangle className="w-8 h-8" />
                             </div>
-                            <h2 className="text-2xl font-bold">Unpair Screen?</h2>
+                            <h2 className="text-2xl font-bold">{t('screens.unpair')}?</h2>
                         </div>
                         
                         <p className="text-slate-600 mb-6 leading-relaxed">
-                            This action will unpair <span className="font-bold text-slate-800">"{deviceToDelete.name}"</span> and it will stop displaying content immediately.
+                            {language === 'es' 
+                                ? <>Esta acción desvinculará a <span className="font-bold text-slate-800">"{deviceToDelete.name}"</span> y dejará de mostrar contenido inmediatamente.</>
+                                : <>This action will unpair <span className="font-bold text-slate-800">"{deviceToDelete.name}"</span> and it will stop displaying content immediately.</>
+                            }
                         </p>
 
                         <div className="space-y-4">
                             <label className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
-                                Type <span className="text-red-500">eliminar</span> to confirm
+                                {t('screens.confirmUnpair')}
                             </label>
                             <input
                                 type="text"
                                 autoFocus
                                 value={deleteInput}
                                 onChange={(e) => setDeleteInput(e.target.value)}
-                                placeholder="Escribe 'eliminar' aquí"
+                                placeholder={language === 'es' ? "Escribe 'eliminar' aquí" : "Type 'eliminar' here"}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-5 outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-bold text-center text-lg uppercase tracking-widest text-slate-800"
                             />
                         </div>
@@ -305,14 +317,14 @@ export default function DeviceList() {
                                 onClick={() => setDeviceToDelete(null)}
                                 className="flex-1 px-6 py-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 disabled={deleteInput.toLowerCase() !== 'eliminar'}
                                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-500/20 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
                             >
-                                Unpair Screen
+                                {t('screens.unpair')}
                             </button>
                         </div>
                     </div>

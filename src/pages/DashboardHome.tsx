@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Monitor, Wifi, Layers, Image } from 'lucide-react';
+import { Monitor, Wifi, Layers, Image, Building2 } from 'lucide-react';
 import { pb } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
-import { Building2 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function DashboardHome() {
+    const { t, language } = useLanguage();
     const [stats, setStats] = useState({
         totalScreens: 0,
         registeredScreens: 0,
@@ -44,8 +45,8 @@ export default function DashboardHome() {
     return (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto">
             <div className="flex flex-col gap-2">
-                <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">Overview</h1>
-                <p className="text-slate-500 text-lg">Your L1NX system status at a glance.</p>
+                <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">{language === 'es' ? 'Resumen' : 'Overview'}</h1>
+                <p className="text-slate-500 text-lg">{language === 'es' ? 'Estado de tu sistema L1NX de un vistazo.' : 'Your L1NX system status at a glance.'}</p>
             </div>
 
             {/* Show message if no organization selected */}
@@ -54,9 +55,12 @@ export default function DashboardHome() {
                     <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-400">
                         <Building2 className="w-16 h-16" />
                     </div>
-                    <h2 className="text-3xl font-bold text-slate-800">Selecciona una empresa</h2>
+                     <h2 className="text-3xl font-bold text-slate-800">{t('settings.selectLanguage').toLowerCase() === 'seleccionar idioma' ? 'Selecciona una empresa' : 'Select a company'}</h2>
                     <p className="text-slate-500 mt-2 max-w-md mx-auto">
-                        Para visualizar las estadísticas y gestionar tus pantallas, selecciona una empresa existente o crea una nueva en el menú lateral.
+                        {language === 'es' 
+                            ? 'Para visualizar las estadísticas y gestionar tus pantallas, selecciona una empresa existente o crea una nueva en el menú lateral.'
+                            : 'To view statistics and manage your screens, select an existing company or create a new one in the side menu.'}
+                        {t('dashboard.selectCompanyDescription')}
                     </p>
                 </div>
             ) : (
@@ -64,10 +68,10 @@ export default function DashboardHome() {
                 {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {[
-                    { label: 'Total Screens', value: stats.totalScreens, icon: Monitor, color: 'text-blue-500', bg: 'bg-blue-50' },
-                    { label: 'Registered Screens', value: stats.registeredScreens, icon: Wifi, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                    { label: 'Display Groups', value: stats.displayGroups, icon: Layers, color: 'text-purple-500', bg: 'bg-purple-50' },
-                    { label: 'Total Media Assets', value: stats.totalMedia, icon: Image, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+                    { label: t('dashboard.activeScreens'), value: stats.totalScreens, icon: Monitor, color: 'text-blue-500', bg: 'bg-blue-50' },
+                    { label: t('common.registered'), value: stats.registeredScreens, icon: Wifi, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                    { label: t('dashboard.totalGroups'), value: stats.displayGroups, icon: Layers, color: 'text-purple-500', bg: 'bg-purple-50' },
+                    { label: t('dashboard.mediaItems'), value: stats.totalMedia, icon: Image, color: 'text-indigo-500', bg: 'bg-indigo-50' },
                 ].map((stat, i) => (
                     <div key={i} className="card-premium group p-8 flex flex-col gap-6 hover:scale-[1.02] transition-all duration-300">
                         <div className="flex justify-between items-start">
@@ -81,7 +85,7 @@ export default function DashboardHome() {
                             <p className="text-5xl font-black text-slate-800 tracking-tighter">{stat.value}</p>
                         </div>
                         <div className="pt-6 border-t border-slate-50 mt-auto flex items-center justify-between text-slate-400 text-xs font-medium">
-                            <span>Last updated: just now</span>
+                            <span>{language === 'es' ? 'Última actualización: hace un momento' : 'Last updated: just now'}</span>
                             <div className="flex gap-1">
                                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
