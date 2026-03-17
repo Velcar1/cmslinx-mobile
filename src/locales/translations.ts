@@ -34,6 +34,17 @@ export const translations = {
             english: "Inglés",
             appearance: "Apariencia",
             system: "Sistema",
+            security: {
+                title: "Seguridad",
+                changePassword: "Cambiar Contraseña",
+                currentPassword: "Contraseña Actual",
+                newPassword: "Nueva Contraseña",
+                confirmPassword: "Confirmar Contraseña",
+                passwordShort: "La contraseña debe tener al menos 8 caracteres.",
+                passwordsNoMatch: "Las contraseñas no coinciden.",
+                updateSuccess: "Contraseña actualizada exitosamente.",
+                updateError: "Error al actualizar la contraseña. Verifica tu información.",
+            }
         },
         dashboard: {
             activeScreens: "Screens Activas",
@@ -140,6 +151,17 @@ export const translations = {
             english: "English",
             appearance: "Appearance",
             system: "System",
+            security: {
+                title: "Security",
+                changePassword: "Change Password",
+                currentPassword: "Current Password",
+                newPassword: "New Password",
+                confirmPassword: "Confirm Password",
+                passwordShort: "Password must be at least 8 characters long.",
+                passwordsNoMatch: "Passwords do not match.",
+                updateSuccess: "Password updated successfully.",
+                updateError: "Error updating password. Check your information.",
+            }
         },
         dashboard: {
             activeScreens: "Active Screens",
