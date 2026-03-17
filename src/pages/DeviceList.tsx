@@ -187,99 +187,170 @@ export default function DeviceList() {
                     {isSuperadmin && <Link to="/devices/register" className="btn-primary">{language === 'es' ? 'Empezar' : 'Get Started'}</Link>}
                 </div>
             ) : (
-                <div className="card-premium overflow-hidden !p-0">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('common.status')}</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('screens.screenName')}</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('common.groups')}</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('screens.nowPlaying')}</th>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">{t('common.actions')}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {devices.map((device) => (
-                                    <tr key={device.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">{t('common.online')}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div>
-                                                <p className="font-bold text-slate-800">{device.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">{device.id}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {editingDeviceId === device.id ? (
-                                                <div className="flex items-center gap-2">
-                                                    <select
-                                                        className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded-lg outline-none focus:border-primary transition-all"
-                                                        defaultValue={device.group}
-                                                        disabled={isUpdating}
-                                                        onChange={(e) => handleUpdateGroup(device.id, e.target.value)}
-                                                    >
-                                                        {groups.map(g => (
-                                                            <option key={g.id} value={g.id}>{g.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    <button
-                                                        onClick={() => setEditingDeviceId(null)}
-                                                        className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
-                                                    >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 group/edit">
-                                                    <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
-                                                        {device.expand?.group?.name || t('common.unassigned')}
-                                                    </span>
-                                                    {canManageContent && (
-                                                        <button
-                                                            onClick={() => setEditingDeviceId(device.id)}
-                                                            className="p-1.5 opacity-0 group-hover/edit:opacity-100 hover:bg-white hover:shadow-sm hover:text-primary rounded-lg transition-all text-slate-400"
-                                                            title="Change group"
-                                                        >
-                                                            <Pencil className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-medium text-slate-600">
-                                            {getContentName(device.group)}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 text-slate-400">
-                                                <button
-                                                    onClick={() => fetchDevices()}
-                                                    className="p-2 hover:bg-white hover:text-primary hover:shadow-sm rounded-lg transition-all"
-                                                    title="Refresh screen"
-                                                >
-                                                    <RefreshCw className="w-4 h-4" />
-                                                </button>
+                <>
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:hidden gap-6">
+                        {devices.map((device) => (
+                            <div key={device.id} className="card-premium group relative flex flex-col gap-5 hover:scale-[1.01]">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 uppercase tracking-widest">{t('common.online')}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => fetchDevices()}
+                                            className="p-2 bg-slate-50 text-slate-400 hover:text-primary rounded-xl transition-all"
+                                        >
+                                            <RefreshCw className="w-4 h-4" />
+                                        </button>
+                                        {canManageContent && (
+                                            <button
+                                                onClick={() => handleDelete(device)}
+                                                className="p-2 bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-all"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800 leading-tight mb-1">{device.name}</h3>
+                                    <p className="text-[10px] text-slate-400 font-mono uppercase tracking-tighter opacity-70">ID: {device.id}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-50">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('common.groups')}</p>
+                                         {editingDeviceId === device.id ? (
+                                            <select
+                                                autoFocus
+                                                className="w-full text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2 py-1.5 rounded-lg outline-none focus:ring-2 focus:ring-primary/20"
+                                                defaultValue={device.group}
+                                                disabled={isUpdating}
+                                                onBlur={() => setEditingDeviceId(null)}
+                                                onChange={(e) => handleUpdateGroup(device.id, e.target.value)}
+                                            >
+                                                {groups.map(g => (
+                                                    <option key={g.id} value={g.id}>{g.name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <div className="flex items-center gap-2 group/edit">
+                                                <span className="text-xs font-bold text-slate-700">{device.expand?.group?.name || t('common.unassigned')}</span>
                                                 {canManageContent && (
-                                                    <button
-                                                        onClick={() => handleDelete(device)}
-                                                        className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
-                                                        title={t('screens.unpair')}
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
+                                                    <button onClick={() => setEditingDeviceId(device.id)} className="text-slate-300 hover:text-primary transition-colors">
+                                                        <Pencil className="w-3 h-3" />
                                                     </button>
                                                 )}
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('screens.nowPlaying')}</p>
+                                        <p className="text-xs font-bold text-primary truncate">{getContentName(device.group)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden lg:block card-premium overflow-hidden !p-0">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-100">
+                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('common.status')}</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('screens.screenName')}</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('common.groups')}</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('screens.nowPlaying')}</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">{t('common.actions')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {devices.map((device) => (
+                                        <tr key={device.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">{t('common.online')}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div>
+                                                    <p className="font-bold text-slate-800">{device.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{device.id}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {editingDeviceId === device.id ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <select
+                                                            className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded-lg outline-none focus:border-primary transition-all"
+                                                            defaultValue={device.group}
+                                                            disabled={isUpdating}
+                                                            onChange={(e) => handleUpdateGroup(device.id, e.target.value)}
+                                                        >
+                                                            {groups.map(g => (
+                                                                <option key={g.id} value={g.id}>{g.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <button
+                                                            onClick={() => setEditingDeviceId(null)}
+                                                            className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2 group/edit">
+                                                        <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+                                                            {device.expand?.group?.name || t('common.unassigned')}
+                                                        </span>
+                                                        {canManageContent && (
+                                                            <button
+                                                                onClick={() => setEditingDeviceId(device.id)}
+                                                                className="p-1.5 opacity-0 group-hover/edit:opacity-100 hover:bg-white hover:shadow-sm hover:text-primary rounded-lg transition-all text-slate-400"
+                                                                title="Change group"
+                                                            >
+                                                                <Pencil className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-medium text-slate-600">
+                                                {getContentName(device.group)}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2 text-slate-400">
+                                                    <button
+                                                        onClick={() => fetchDevices()}
+                                                        className="p-2 hover:bg-white hover:text-primary hover:shadow-sm rounded-lg transition-all"
+                                                        title="Refresh screen"
+                                                    >
+                                                        <RefreshCw className="w-4 h-4" />
+                                                    </button>
+                                                    {canManageContent && (
+                                                        <button
+                                                            onClick={() => handleDelete(device)}
+                                                            className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
+                                                            title={t('screens.unpair')}
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
             )}
             {/* Delete Confirmation Modal */}
             {deviceToDelete && (

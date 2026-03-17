@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X, Users, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X, Users, LogOut, Menu } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,6 +16,23 @@ export default function Navigation() {
     const [showNewOrgModal, setShowNewOrgModal] = useState(false);
     const [newOrgName, setNewOrgName] = useState('');
     const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Close mobile menu when location changes
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [location.pathname]);
+
+    // Close mobile menu when window is resized to desktop
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setIsMobileMenuOpen(false);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const canManageOrgs = hasPermission('manage_organizations');
     const canManageUsers = hasPermission('manage_users');
@@ -52,7 +69,37 @@ export default function Navigation() {
     ];
 
     return (
-        <nav className="fixed left-0 top-0 bottom-0 w-64 bg-sidebar text-slate-300 flex flex-col z-50">
+        <>
+            {/* Mobile Top Bar */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b border-white/5 flex items-center justify-between px-6 z-[60]">
+                <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold tracking-tighter text-white">L1</span>
+                    <span className="text-2xl font-bold tracking-tighter flex">
+                        <span className="text-primary">N</span>
+                        <span className="text-blue-400">X</span>
+                    </span>
+                </div>
+                <button 
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="p-2 text-slate-400 hover:text-white transition-all bg-white/5 rounded-xl border border-white/10"
+                >
+                    {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
+            </div>
+
+            {/* Backdrop for Mobile */}
+            {isMobileMenuOpen && (
+                <div 
+                    className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] transition-opacity"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
+            {/* Sidebar Navigation */}
+            <nav className={`
+                fixed left-0 top-0 bottom-0 w-64 bg-sidebar text-slate-300 flex flex-col z-[58] transition-all duration-300 ease-in-out border-r border-white/5
+                ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
+            `}>
             {/* Logo Section */}
             <div className="p-8 pb-4">
                 <div className="flex items-center gap-2">
@@ -218,5 +265,6 @@ export default function Navigation() {
                 </div>
             )}
         </nav>
+      </>
     );
 }

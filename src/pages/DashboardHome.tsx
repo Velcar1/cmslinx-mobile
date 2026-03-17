@@ -66,7 +66,7 @@ export default function DashboardHome() {
             ) : (
                 <>
                 {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                 {[
                     { label: t('dashboard.activeScreens'), value: stats.totalScreens, icon: Monitor, color: 'text-blue-500', bg: 'bg-blue-50' },
                     { label: t('common.registered'), value: stats.registeredScreens, icon: Wifi, color: 'text-emerald-500', bg: 'bg-emerald-50' },

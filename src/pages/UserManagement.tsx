@@ -192,7 +192,68 @@ export default function UserManagement() {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:hidden gap-6 p-6">
+                        {isLoading ? (
+                            <div className="md:col-span-2 py-8 text-center text-slate-400">
+                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                                Cargando...
+                            </div>
+                        ) : filteredUsers.length === 0 ? (
+                            <div className="md:col-span-2 py-8 text-center text-slate-500">
+                                No se encontraron usuarios.
+                            </div>
+                        ) : (
+                            filteredUsers.map(user => (
+                                <div key={user.id} className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col gap-4 relative group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-slate-500 shrink-0 shadow-sm">
+                                            <UserIcon className="w-6 h-6" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-bold text-slate-800 truncate">{user.name}</p>
+                                            <p className="text-sm text-slate-500 truncate">{user.email}</p>
+                                        </div>
+                                        {user.id !== currentUser?.id && (
+                                            <button 
+                                                onClick={() => handleDeleteUser(user)}
+                                                className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-200/50">
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                            user.role === 'superadmin' ? 'bg-red-100 text-red-700' :
+                                            user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
+                                            user.role === 'content_manager' ? 'bg-green-100 text-green-700' :
+                                            'bg-slate-200 text-slate-700'
+                                        }`}>
+                                            {translateRole(user.role)}
+                                        </span>
+                                        
+                                        {isSuperadmin && (
+                                            user.role === 'superadmin' ? (
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic flex items-center gap-1.5 ml-auto">
+                                                    <Shield className="w-3 h-3" /> Global
+                                                </span>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 text-slate-500 font-bold text-[10px] uppercase tracking-widest ml-auto">
+                                                    <Building2 className="w-3 h-3" />
+                                                    {user.expand?.organization?.name || '---'}
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <table className="w-full text-left border-collapse hidden lg:table">
                         <thead>
                             <tr className="bg-slate-50/50">
                                 <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Usuario</th>

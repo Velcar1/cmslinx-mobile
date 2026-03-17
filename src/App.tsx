@@ -19,8 +19,8 @@ function DashboardLayout() {
     return (
         <div className="flex min-h-screen bg-background text-text-primary font-sans">
             <Navigation />
-            <div className="flex-1 flex flex-col min-h-screen">
-                <main className="flex-1 p-6 md:p-10 lg:p-12 overflow-y-auto">
+            <div className="flex-1 flex flex-col min-h-screen lg:pl-64">
+                <main className="flex-1 p-4 md:p-8 lg:p-10 pt-20 lg:pt-10 overflow-y-auto">
                     <div className="max-w-7xl mx-auto">
                         <Routes>
                             <Route path="/" element={<DashboardHome />} />

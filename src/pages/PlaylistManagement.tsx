@@ -294,10 +294,10 @@ export default function PlaylistManagement() {
                                         const videoFile = isVideo(media.file);
 
                                         return (
-                                            <div key={item.id} className="card-premium flex items-center gap-6 group hover:border-primary/20 transition-all">
-                                                <div className="text-slate-300 font-black text-2xl italic w-10 text-center flex-shrink-0 group-hover:text-primary/20 transition-colors">{index + 1}</div>
+                                            <div key={item.id} className="card-premium flex flex-col sm:flex-row items-center gap-4 sm:gap-6 group hover:border-primary/20 transition-all text-center sm:text-left">
+                                                <div className="text-slate-300 font-black text-2xl italic w-full sm:w-10 text-center flex-shrink-0 group-hover:text-primary/20 transition-colors">{index + 1}</div>
 
-                                                <div className="w-32 h-20 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100 shadow-inner">
+                                                <div className="w-full sm:w-32 aspect-video sm:h-20 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100 shadow-inner">
                                                     {videoFile ? (
                                                         <video src={`${fileUrl}#t=0.1`} className="w-full h-full object-cover" muted />
                                                     ) : (
@@ -320,45 +320,44 @@ export default function PlaylistManagement() {
                                                     </div>
                                                 </div>
 
-                                                 {!videoFile && (
-                                                    <div className="hidden sm:flex flex-col items-center gap-1 bg-slate-50 p-3 rounded-2xl border border-slate-100 min-w-[100px]">
-                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('playlists.duration')}</label>
-                                                        <div className="flex items-center gap-2">
-                                                            <input
-                                                                type="number"
-                                                                value={item.duration}
-                                                                disabled={!canManageContent}
-                                                                onChange={(e) => handleUpdateDuration(item.id, parseInt(e.target.value) || 1)}
-                                                                 className="w-12 text-center bg-transparent font-bold text-primary outline-none disabled:opacity-50"
-                                                                min="1"
-                                                            />
-                                                            <span className="text-[11px] text-slate-400 font-bold uppercase">{t('playlists.sec')}</span>
+                                                <div className="flex items-center gap-2 sm:gap-1.5 ml-auto w-full sm:w-auto justify-center sm:justify-end border-t sm:border-t-0 pt-4 sm:pt-0 mt-2 sm:mt-0">
+                                                    {!videoFile && (
+                                                        <div className="flex flex-col items-center gap-1 bg-slate-50 p-2 sm:p-3 rounded-2xl border border-slate-100 min-w-[80px] sm:min-w-[100px]">
+                                                            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('playlists.duration')}</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="number"
+                                                                    value={item.duration}
+                                                                    disabled={!canManageContent}
+                                                                    onChange={(e) => handleUpdateDuration(item.id, parseInt(e.target.value) || 1)}
+                                                                    className="w-8 sm:w-12 text-center bg-transparent font-bold text-primary outline-none disabled:opacity-50 text-sm"
+                                                                    min="1"
+                                                                />
+                                                                <span className="text-[9px] sm:text-[11px] text-slate-400 font-bold uppercase">{t('playlists.sec')}</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="flex items-center gap-1.5 ml-auto">
+                                                    )}
                                                     {canManageContent && (
                                                         <>
-                                                            <div className="flex flex-col gap-1">
+                                                            <div className="flex flex-row sm:flex-col gap-2 sm:gap-1">
                                                                 <button
                                                                     onClick={() => moveItem(index, 'up')}
                                                                     disabled={index === 0}
-                                                                    className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
+                                                                    className="p-2.5 sm:p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100 bg-slate-50 sm:bg-transparent"
                                                                 >
-                                                                    <ArrowUp className="w-4 h-4" />
+                                                                    <ArrowUp className="w-5 h-5 sm:w-4 sm:h-4" />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => moveItem(index, 'down')}
                                                                     disabled={index === items.length - 1}
-                                                                    className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100"
+                                                                    className="p-2.5 sm:p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-primary disabled:opacity-30 transition-all border border-transparent hover:border-slate-100 bg-slate-50 sm:bg-transparent"
                                                                 >
-                                                                    <ArrowDown className="w-4 h-4" />
+                                                                    <ArrowDown className="w-5 h-5 sm:w-4 sm:h-4" />
                                                                 </button>
                                                             </div>
                                                             <button
                                                                 onClick={() => handleDeleteItem(item.id)}
-                                                                className="p-3 rounded-2xl bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all border border-slate-100"
+                                                                className="p-3 sm:p-3 rounded-2xl bg-white hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all border border-slate-100"
                                                             >
                                                                 <Trash2 className="w-5 h-5" />
                                                             </button>

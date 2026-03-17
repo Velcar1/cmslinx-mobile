@@ -179,7 +179,7 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                             <div>
                                                 <p className="text-slate-400 text-xs font-bold uppercase">Inicio</p>
                                                 <p className="text-slate-700 font-medium">{formatDateTime(schedule.schedule_start)}</p>

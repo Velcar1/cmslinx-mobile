@@ -95,7 +95,7 @@ export default function DeviceRegistration() {
                 </Link>
 
                 <div className="text-left w-full">
-                    <h1 className="text-4xl font-bold text-slate-800 mb-2 tracking-tight">
+                    <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2 tracking-tight">
                         Vincular Nueva Pantalla
                     </h1>
                     <p className="text-slate-500 text-lg">
