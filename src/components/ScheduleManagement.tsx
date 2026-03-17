@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, CalendarClock, Loader2, Edit2 } from 'lucide-react';
 import { pb, type PWAConfig } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
+import { useAuth } from '../context/AuthContext';
 import ConfigForm from './ConfigForm';
 
 interface ScheduleManagementProps {
@@ -14,6 +15,9 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
     const [isCreating, setIsCreating] = useState(false);
     const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
     const { activeOrganization } = useOrganization();
+    const { hasPermission } = useAuth();
+
+    const canManageContent = hasPermission('manage_content');
 
     const fetchSchedules = async () => {
         if (!activeOrganization) {
@@ -111,12 +115,14 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
                     <h3 className="text-xl font-bold text-slate-800">Programaciones</h3>
                     <p className="text-slate-500 text-sm">Contenido que se muestra temporalmente.</p>
                 </div>
-                <button
-                    onClick={() => setIsCreating(true)}
-                    className="bg-primary hover:bg-[#D98201] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md flex items-center gap-2"
-                >
-                    <Plus className="w-4 h-4" /> Nueva
-                </button>
+                {canManageContent && (
+                    <button
+                        onClick={() => setIsCreating(true)}
+                        className="bg-primary hover:bg-[#D98201] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" /> Nueva
+                    </button>
+                )}
             </div>
 
             {isLoading ? (
@@ -133,12 +139,14 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
                     <p className="text-slate-500 text-sm mt-1 mb-6 max-w-sm mx-auto">
                         Crea una programación para mostrar contenido específico durante un periodo de tiempo.
                     </p>
-                    <button
-                        onClick={() => setIsCreating(true)}
-                        className="text-primary font-bold hover:underline"
-                    >
-                        Crear la primera programación &rarr;
-                    </button>
+                    {canManageContent && (
+                        <button
+                            onClick={() => setIsCreating(true)}
+                            className="text-primary font-bold hover:underline"
+                        >
+                            Crear la primera programación &rarr;
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
@@ -183,22 +191,24 @@ export default function ScheduleManagement({ groupId }: ScheduleManagementProps)
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setEditingConfigId(schedule.id)}
-                                            className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-                                            title="Editar"
-                                        >
-                                            <Edit2 className="w-5 h-5" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(schedule.id)}
-                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                                            title="Eliminar"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    </div>
+                                     {canManageContent && (
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setEditingConfigId(schedule.id)}
+                                                className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+                                                title="Editar"
+                                            >
+                                                <Edit2 className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(schedule.id)}
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
