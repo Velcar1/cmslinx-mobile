@@ -90,9 +90,34 @@ export default function PlaylistManagement() {
     };
 
     const handleDeletePlaylist = async (id: string, name: string) => {
-        if (!window.confirm(language === 'es' ? `¿Eliminar la lista "${name}"?` : `Delete playlist "${name}"?`)) return;
+        if (!window.confirm(language === 'es' ? `¿Eliminar la lista "${name}"? y todos sus elementos?` : `Delete playlist "${name}" and all its items?`)) return;
+        
+        setIsSaving(true);
         try {
+            // 1. Delete all playlist_items for this playlist
+            const itemsToDelete = await pb.collection('playlist_items').getFullList({
+                filter: `playlist = "${id}"`
+            });
+            
+            for (const item of itemsToDelete) {
+                await pb.collection('playlist_items').delete(item.id);
+            }
+
+            // 2. Unlink from pwa_config (set playlist to null in all configs utilizing it)
+            const configsToUpdate = await pb.collection('pwa_config').getFullList({
+                filter: `playlist = "${id}"`
+            });
+
+            for (const config of configsToUpdate) {
+                await pb.collection('pwa_config').update(config.id, {
+                    playlist: null,
+                    content_type: 'video_only' // Fallback to video_only if it was a playlist
+                });
+            }
+
+            // 3. Delete the playlist itself
             await pb.collection('playlists').delete(id);
+            
             setPlaylists(playlists.filter(p => p.id !== id));
             if (selectedPlaylist?.id === id) {
                 setSelectedPlaylist(null);
@@ -100,6 +125,9 @@ export default function PlaylistManagement() {
             }
         } catch (error) {
             console.error('Error deleting playlist:', error);
+            alert(language === 'es' ? 'Error al eliminar la lista. Es posible que esté en uso.' : 'Error deleting playlist. It might be in use.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
