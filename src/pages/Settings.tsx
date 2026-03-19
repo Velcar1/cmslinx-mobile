@@ -6,7 +6,7 @@ import { Globe, Shield, Monitor, Bell, Palette, Lock, Eye, EyeOff, Loader2, Chec
 
 export default function Settings() {
     const { language, setLanguage, t } = useLanguage();
-    const { user } = useAuth(); // Re-re-added to help with ID verification
+    useAuth();
 
     // Password change state
     const [currentPassword, setCurrentPassword] = useState('');
