@@ -73,11 +73,7 @@ export default function Navigation() {
             {/* Mobile Top Bar */}
             <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b border-white/5 flex items-center justify-between px-6 z-[60]">
                 <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold tracking-tighter text-white">L1</span>
-                    <span className="text-2xl font-bold tracking-tighter flex">
-                        <span className="text-primary">N</span>
-                        <span className="text-blue-400">X</span>
-                    </span>
+                    <img src="/logo-sidebar.png" alt="L1NX Logo" className="h-14 w-auto object-contain" />
                 </div>
                 <button 
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -101,13 +97,9 @@ export default function Navigation() {
                 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
             `}>
             {/* Logo Section */}
-            <div className="p-8 pb-4">
-                <div className="flex items-center gap-2">
-                    <span className="text-3xl font-bold tracking-tighter text-white">L1</span>
-                    <span className="text-3xl font-bold tracking-tighter flex">
-                        <span className="text-primary">N</span>
-                        <span className="text-blue-400">X</span>
-                    </span>
+            <div className="p-4 pb-2 flex justify-center">
+                <div className="flex items-center justify-center w-full">
+                    <img src="/logo-sidebar.png" alt="L1NX Logo" className="w-[80%] h-auto max-h-28 object-contain" />
                 </div>
             </div>
 

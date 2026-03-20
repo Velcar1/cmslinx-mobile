@@ -36,17 +36,15 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-            <div className="card-premium w-full max-w-md p-8 md:p-10 text-center animate-in fade-in zoom-in duration-500">
-                <div className="mb-8 flex justify-center">
-                    <div className="bg-primary/10 p-4 rounded-3xl inline-flex text-primary">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                        </svg>
+            <div className="card-premium w-full max-w-md p-6 md:p-8 text-center animate-in fade-in zoom-in duration-500">
+                <div className="mb-3 flex justify-center">
+                    <div className="inline-flex justify-center w-full">
+                        <img src="/logo-sidebar.png" alt="L1NX Logo" className="w-[80%] h-auto max-h-40 object-contain" />
                     </div>
                 </div>
                 
-                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">{t('login.welcome')}</h1>
-                <p className="text-slate-500 mb-8">{t('login.subtitle')}</p>
+                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-0.5">{t('login.welcome')}</h1>
+                <p className="text-slate-500 mb-3">{t('login.subtitle')}</p>
                 
                 <form onSubmit={handleSubmit} className="space-y-5 text-left">
                     {error && (
