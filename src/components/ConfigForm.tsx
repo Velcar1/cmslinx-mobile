@@ -5,6 +5,7 @@ import { pb, type PWAConfig, type Media, type Playlist } from '../lib/pocketbase
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
 import { Building2 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist';
 
@@ -49,6 +50,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('');
     const { activeOrganization } = useOrganization();
     const { hasPermission } = useAuth();
+    const { t } = useLanguage();
     
     const canManageContent = hasPermission('manage_content');
 
@@ -200,8 +202,15 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                 if (!data.schedule_start || !data.schedule_end) {
                     throw new Error("Debe especificar fecha/hora de inicio y fin para la programación.");
                 }
-                formData.append('schedule_start', new Date(data.schedule_start).toISOString());
-                formData.append('schedule_end', new Date(data.schedule_end).toISOString());
+                const startDate = new Date(data.schedule_start);
+                const endDate = new Date(data.schedule_end);
+                
+                if (startDate >= endDate) {
+                    throw new Error(t('groups.scheduleError'));
+                }
+                
+                formData.append('schedule_start', startDate.toISOString());
+                formData.append('schedule_end', endDate.toISOString());
             } else {
                 formData.append('is_schedule', 'false');
                 formData.append('schedule_start', '');

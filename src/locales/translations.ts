@@ -75,6 +75,7 @@ export const translations = {
             createFirst: "Crear Primer Grupo",
             deleteConfirm: "¿Estás seguro de que quieres eliminar este grupo? Las pantallas vinculadas podrían dejar de funcionar correctamente.",
             assignedScreens: "Pantallas Asignadas",
+            scheduleError: "La fecha de inicio debe ser anterior a la fecha de fin.",
         },
         media: {
             title: "Biblioteca Multimedia",
@@ -192,6 +193,7 @@ export const translations = {
             createFirst: "Create First Group",
             deleteConfirm: "Are you sure you want to delete this group? Registered screens in this group may stop working correctly.",
             assignedScreens: "Assigned Screens",
+            scheduleError: "Start date must be before end date.",
         },
         media: {
             title: "Media Library",
