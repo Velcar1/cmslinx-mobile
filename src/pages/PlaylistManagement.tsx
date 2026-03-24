@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Trash2, List, Image as ImageIcon, Video, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { Loader2, Plus, Trash2, List, Image as ImageIcon, Video, ArrowUp, ArrowDown, X, Pencil } from 'lucide-react';
 import { pb, type Playlist, type PlaylistItem, type Media } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,8 @@ export default function PlaylistManagement() {
     const [items, setItems] = useState<PlaylistItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [editingPlaylistId, setEditingPlaylistId] = useState<string | null>(null);
+    const [tempPlaylistName, setTempPlaylistName] = useState('');
 
     // Modal states
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -20,7 +22,7 @@ export default function PlaylistManagement() {
     const [availableMedia, setAvailableMedia] = useState<Media[]>([]);
     const { activeOrganization } = useOrganization();
     const { hasPermission } = useAuth();
-    
+
     const canManageContent = hasPermission('manage_content');
 
     const fetchPlaylists = async () => {
@@ -73,7 +75,7 @@ export default function PlaylistManagement() {
         if (!activeOrganization) return;
         setIsSaving(true);
         try {
-            const record = await pb.collection('playlists').create({ 
+            const record = await pb.collection('playlists').create({
                 name: newPlaylistName,
                 organization: activeOrganization.id
             }) as any as Playlist;
@@ -89,16 +91,35 @@ export default function PlaylistManagement() {
         }
     };
 
+    const handleUpdatePlaylistName = async (playlistId: string) => {
+        if (!tempPlaylistName.trim()) return;
+        setIsSaving(true);
+        try {
+            await pb.collection('playlists').update(playlistId, { name: tempPlaylistName.trim() });
+            setEditingPlaylistId(null);
+            const updatedPlaylists = playlists.map(p => p.id === playlistId ? { ...p, name: tempPlaylistName.trim() } : p);
+            setPlaylists(updatedPlaylists);
+            if (selectedPlaylist?.id === playlistId) {
+                setSelectedPlaylist({ ...selectedPlaylist, name: tempPlaylistName.trim() });
+            }
+        } catch (error) {
+            console.error('Error updating playlist name:', error);
+            alert(language === 'es' ? 'Error al actualizar el nombre.' : 'Error updating playlist name.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleDeletePlaylist = async (id: string, name: string) => {
         if (!window.confirm(language === 'es' ? `¿Eliminar la lista "${name}"? y todos sus elementos?` : `Delete playlist "${name}" and all its items?`)) return;
-        
+
         setIsSaving(true);
         try {
             // 1. Delete all playlist_items for this playlist
             const itemsToDelete = await pb.collection('playlist_items').getFullList({
                 filter: `playlist = "${id}"`
             });
-            
+
             for (const item of itemsToDelete) {
                 await pb.collection('playlist_items').delete(item.id);
             }
@@ -117,7 +138,7 @@ export default function PlaylistManagement() {
 
             // 3. Delete the playlist itself
             await pb.collection('playlists').delete(id);
-            
+
             setPlaylists(playlists.filter(p => p.id !== id));
             if (selectedPlaylist?.id === id) {
                 setSelectedPlaylist(null);
@@ -135,7 +156,7 @@ export default function PlaylistManagement() {
         if (!activeOrganization) return;
         setIsMediaModalOpen(true);
         try {
-            const media = await pb.collection('media').getFullList<Media>({ 
+            const media = await pb.collection('media').getFullList<Media>({
                 sort: '-created',
                 filter: `organization = "${activeOrganization.id}"`
             });
@@ -207,25 +228,25 @@ export default function PlaylistManagement() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-800">{t('playlists.title')}</h1>
-                    <p className="text-slate-500 mt-1">{t('playlists.subtitle')}</p>
-                </div>
-                {canManageContent && (
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="btn-primary flex items-center justify-center gap-2"
-                    >
-                        <Plus className="w-5 h-5" />
-                        {t('playlists.newPlaylist')}
-                    </button>
-                )}
+            <div>
+                <h1 className="text-3xl font-bold text-slate-800">{t('playlists.title')}</h1>
+                <p className="text-slate-500 mt-1">{t('playlists.subtitle')}</p>
             </div>
+            {canManageContent && (
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="btn-primary flex items-center justify-center gap-2"
+                >
+                    <Plus className="w-5 h-5" />
+                    {t('playlists.newPlaylist')}
+                </button>
+            )}
+        </div>
 
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Sidebar: Playlists List */}
-                 <aside className="lg:col-span-1 space-y-4">
+                <aside className="lg:col-span-1 space-y-4">
                     <div className="card-premium h-full min-h-[500px] flex flex-col">
                         <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-6">{t('playlists.yourPlaylists')}</h2>
                         <div className="flex flex-col gap-2 flex-1">
@@ -234,7 +255,7 @@ export default function PlaylistManagement() {
                                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                                     <span className="text-xs text-slate-400 font-medium">Loading...</span>
                                 </div>
-                             ) : !activeOrganization ? (
+                            ) : !activeOrganization ? (
                                 <div className="text-center py-10 px-4">
                                     <p className="text-sm text-slate-400 font-medium leading-relaxed">{language === 'es' ? 'Selecciona una empresa.' : 'Select a company.'}</p>
                                 </div>
@@ -252,21 +273,52 @@ export default function PlaylistManagement() {
                                             : 'hover:bg-slate-50 text-slate-700 border-transparent'
                                             }`}
                                     >
-                                        <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="flex items-center gap-3 overflow-hidden flex-1">
                                             <List className={`w-4 h-4 flex-shrink-0 ${selectedPlaylist?.id === p.id ? 'text-white' : 'text-primary'}`} />
-                                            <span className="font-bold truncate text-sm">{p.name}</span>
+                                            {editingPlaylistId === p.id ? (
+                                                <input
+                                                    autoFocus
+                                                    className="bg-white/10 border border-white/20 rounded px-2 py-0.5 text-sm w-full outline-none focus:bg-white/20"
+                                                    value={tempPlaylistName}
+                                                    onChange={(e) => setTempPlaylistName(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') { e.stopPropagation(); handleUpdatePlaylistName(p.id); }
+                                                        if (e.key === 'Escape') { e.stopPropagation(); setEditingPlaylistId(null); }
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <span className="font-bold truncate text-sm">{p.name}</span>
+                                            )}
                                         </div>
-                                        {canManageContent && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(p.id, p.name); }}
-                                                className={`p-1.5 rounded-xl transition-all ${selectedPlaylist?.id === p.id
-                                                    ? 'text-white/60 hover:bg-white/20 hover:text-white'
-                                                    : 'text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100'
-                                                    }`}
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-1">
+                                            {canManageContent && !editingPlaylistId && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingPlaylistId(p.id);
+                                                        setTempPlaylistName(p.name);
+                                                    }}
+                                                    className={`p-1.5 rounded-xl transition-all ${selectedPlaylist?.id === p.id
+                                                        ? 'text-white/60 hover:bg-white/20 hover:text-white'
+                                                        : 'text-slate-300 hover:text-primary hover:bg-primary/5 opacity-0 group-hover:opacity-100'
+                                                        }`}
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                            {canManageContent && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(p.id, p.name); }}
+                                                    className={`p-1.5 rounded-xl transition-all ${selectedPlaylist?.id === p.id
+                                                        ? 'text-white/60 hover:bg-white/20 hover:text-white'
+                                                        : 'text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100'
+                                                        }`}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -283,7 +335,7 @@ export default function PlaylistManagement() {
                                     <div className="bg-primary/10 p-4 rounded-2xl text-primary">
                                         <List className="w-7 h-7" />
                                     </div>
-                                     <div>
+                                    <div>
                                         <h2 className="text-2xl font-bold text-slate-800">{selectedPlaylist.name}</h2>
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} {t('playlists.elements')}</span>
@@ -293,7 +345,7 @@ export default function PlaylistManagement() {
                                     </div>
                                 </div>
                                 {canManageContent && (
-                                     <button
+                                    <button
                                         onClick={handleOpenMediaModal}
                                         className="w-full sm:w-auto btn-primary flex items-center justify-center gap-2 py-4 px-8"
                                     >
@@ -305,8 +357,8 @@ export default function PlaylistManagement() {
                             <div className="space-y-4">
                                 {items.length === 0 ? (
                                     <div className="card-premium flex flex-col items-center justify-center py-24 bg-slate-50/50 border-dashed">                                         <div className="bg-slate-200 p-6 rounded-3xl mb-4">
-                                            <Plus className="w-12 h-12 text-slate-400" />
-                                        </div>
+                                        <Plus className="w-12 h-12 text-slate-400" />
+                                    </div>
                                         <h3 className="text-xl font-bold text-slate-800">{t('playlists.emptyPlaylist')}</h3>
                                         <p className="text-slate-500 mt-2 mb-8">{t('playlists.emptySubtitle')}</p>
                                         {canManageContent && (
@@ -336,14 +388,14 @@ export default function PlaylistManagement() {
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-bold text-slate-800 truncate mb-2">{media.name}</p>
                                                     <div className="flex items-center gap-3">                                                         {videoFile ? (
-                                                            <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-100">
-                                                                <Video className="w-3 h-3" /> {t('media.typeVideo')}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-emerald-100">
-                                                                <ImageIcon className="w-3 h-3" /> {t('media.typeImage')}
-                                                            </span>
-                                                        )}
+                                                        <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-100">
+                                                            <Video className="w-3 h-3" /> {t('media.typeVideo')}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-emerald-100">
+                                                            <ImageIcon className="w-3 h-3" /> {t('media.typeImage')}
+                                                        </span>
+                                                    )}
 
                                                     </div>
                                                 </div>
@@ -399,7 +451,7 @@ export default function PlaylistManagement() {
                             </div>
                         </div>
                     ) : (
-                         <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
+                        <div className="card-premium flex flex-col items-center justify-center py-32 bg-slate-50/50 border-dashed text-center">
                             <div className="bg-slate-200 p-8 rounded-full mb-6 text-slate-300">
                                 <List className="w-16 h-16" />
                             </div>
@@ -411,7 +463,7 @@ export default function PlaylistManagement() {
             </div>
 
             {/* Create Playlist Modal */}
-             {isCreateModalOpen && (
+            {isCreateModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
@@ -419,13 +471,13 @@ export default function PlaylistManagement() {
                             <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                                 <X className="w-6 h-6" />
                             </button>
-                         </div>
+                        </div>
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t('playlists.playlistName')}</label>
                                 <input
                                     type="text"
-                                     autoFocus
+                                    autoFocus
                                     value={newPlaylistName}
                                     onChange={(e) => setNewPlaylistName(e.target.value)}
                                     placeholder={language === 'es' ? "Ej. Promociones, Bienvenida..." : "e.g. Sales Promos, Welcome Loop..."}
@@ -433,7 +485,7 @@ export default function PlaylistManagement() {
                                 />
                             </div>
                             <button
-                                 onClick={handleCreatePlaylist}
+                                onClick={handleCreatePlaylist}
                                 disabled={!newPlaylistName.trim() || isSaving}
                                 className="w-full btn-primary flex justify-center py-4"
                             >
@@ -448,7 +500,7 @@ export default function PlaylistManagement() {
             {isMediaModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
                             <div>
                                 <h3 className="text-2xl font-bold text-slate-800">{t('playlists.addContent')}</h3>
                                 <p className="text-slate-500 font-medium mt-1">{language === 'es' ? 'Selecciona un archivo para añadir a tu secuencia.' : 'Select an asset to add to your sequence.'}</p>
