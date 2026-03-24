@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X, Users, LogOut, Menu } from 'lucide-react';
+import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X, Users, LogOut, Menu, Send } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,7 @@ export default function Navigation() {
 
     const canManageOrgs = hasPermission('manage_organizations');
     const canManageUsers = hasPermission('manage_users');
+    const canManageContent = hasPermission('manage_content');
 
     const handleCreateOrganization = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,6 +62,7 @@ export default function Navigation() {
 
     const navItems = [
         { path: '/', label: t('common.dashboard'), icon: LayoutDashboard, show: true },
+        { path: '/publish', label: t('common.publish') || 'Publicar', icon: Send, show: canManageContent },
         { path: '/devices', label: t('common.screens'), icon: MonitorPlay, show: true },
         { path: '/groups', label: t('common.groups'), icon: Folder, show: true },
         { path: '/media', label: t('common.media'), icon: Image, show: true },

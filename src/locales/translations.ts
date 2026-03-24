@@ -24,6 +24,7 @@ export const translations = {
             groups: "Groups",
             media: "Media Library",
             playlists: "Playlists",
+            publish: "Publicar",
             users: "Usuarios",
         },
         settings: {
@@ -142,6 +143,7 @@ export const translations = {
             groups: "Groups",
             media: "Media Library",
             playlists: "Playlists",
+            publish: "Publish",
             users: "Users",
         },
         settings: {

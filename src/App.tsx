@@ -6,6 +6,7 @@ import DeviceList from './pages/DeviceList';
 import GroupManagement from './pages/GroupManagement';
 import MediaLibrary from './pages/MediaLibrary';
 import PlaylistManagement from './pages/PlaylistManagement';
+import Publish from './pages/Publish';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
@@ -29,6 +30,7 @@ function DashboardLayout() {
                             <Route path="/devices" element={<DeviceList />} />
                             <Route path="/media" element={<MediaLibrary />} />
                             <Route path="/playlists" element={<PlaylistManagement />} />
+                            <Route path="/publish" element={<Publish />} />
                             <Route path="/users" element={<UserManagement />} />
                             <Route path="/settings" element={<Settings />} />
                         </Routes>
