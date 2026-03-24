@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Loader2, LogIn, AlertCircle } from 'lucide-react';
+import { Loader2, LogIn, AlertCircle, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { pb } from '../lib/pocketbase';
 
 export default function Login() {
     const { t, language } = useLanguage();
@@ -10,6 +11,12 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Password reset state
+    const [isResetting, setIsResetting] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [resetMessage, setResetMessage] = useState('');
     
     const { login, user } = useAuth();
 
@@ -34,6 +41,22 @@ export default function Login() {
         }
     };
 
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!resetEmail) return;
+        setResetStatus('loading');
+        setResetMessage('');
+        try {
+            await pb.collection('users').requestPasswordReset(resetEmail);
+            setResetStatus('success');
+            setResetMessage(language === 'es' ? 'Se ha enviado un enlace de recuperación a tu correo.' : 'A recovery link has been sent to your email.');
+        } catch (err: any) {
+            console.error('Password reset error:', err);
+            setResetStatus('error');
+            setResetMessage(language === 'es' ? 'Error al enviar el correo. Verifica que la dirección sea correcta.' : 'Error sending email. Verify the address is correct.');
+        }
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
             <div className="card-premium w-full max-w-md p-6 md:p-8 text-center animate-in fade-in zoom-in duration-500">
@@ -44,60 +67,129 @@ export default function Login() {
                 </div>
                 
                 <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-0.5">{t('login.welcome')}</h1>
-                <p className="text-slate-500 mb-3">{t('login.subtitle')}</p>
+                <p className="text-slate-500 mb-3">{isResetting ? (language === 'es' ? 'Ingresa tu correo para recuperar tu acceso' : 'Enter your email to recover your access') : t('login.subtitle')}</p>
                 
-                <form onSubmit={handleSubmit} className="space-y-5 text-left">
-                    {error && (
-                        <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-200 text-sm font-medium">
-                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                            {error}
-                        </div>
-                    )}
-                    
-                    <div className="space-y-2">
-                        <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">{t('login.email')}</label>
-                        <input 
-                            id="email"
-                            name="email"
-                            type="email" 
-                            required
-                            autoComplete="email"
-                            placeholder="admin@l1nx.com"
-                            className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 text-slate-800 outline-none transition-all"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                        />
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <label htmlFor="password" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">{language === 'es' ? 'Contraseña' : 'Password'}</label>
-                        <input 
-                            id="password"
-                            name="password"
-                            type="password" 
-                            required
-                            autoComplete="current-password"
-                            placeholder="••••••••"
-                            className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 text-slate-800 outline-none transition-all"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                        />
-                    </div>
-                    
-                    <button 
-                        type="submit" 
-                        disabled={isSubmitting}
-                        className="w-full bg-primary hover:bg-[#D98201] text-white py-4 mt-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary/20"
-                    >
-                        {isSubmitting ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
+                {isResetting ? (
+                    <form onSubmit={handleResetPassword} className="space-y-4 text-left animate-in fade-in slide-in-from-right-4 duration-300">
+                        {resetStatus === 'error' && (
+                            <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-200 text-sm font-medium">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                {resetMessage}
+                            </div>
+                        )}
+                        {resetStatus === 'success' && (
+                            <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl flex items-center gap-3 border border-emerald-200 text-sm font-medium">
+                                <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                                {resetMessage}
+                            </div>
+                        )}
+                        
+                        {!resetStatus.includes('success') && (
                             <>
-                                <LogIn className="w-5 h-5" /> {t('login.enter')}
+                                <div className="space-y-2">
+                                    <label htmlFor="resetEmail" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">{t('login.email')}</label>
+                                    <input 
+                                        id="resetEmail"
+                                        type="email" 
+                                        required
+                                        placeholder="admin@l1nx.com"
+                                        className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 text-slate-800 outline-none transition-all"
+                                        value={resetEmail}
+                                        onChange={e => setResetEmail(e.target.value)}
+                                        disabled={resetStatus === 'loading'}
+                                    />
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    disabled={resetStatus === 'loading' || !resetEmail}
+                                    className="w-full bg-primary hover:bg-[#D98201] text-white py-4 mt-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary/20"
+                                >
+                                    {resetStatus === 'loading' ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Mail className="w-5 h-5" /> {language === 'es' ? 'Enviar enlace' : 'Send link'}
+                                        </>
+                                    )}
+                                </button>
                             </>
                         )}
-                    </button>
-                </form>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                setIsResetting(false);
+                                setResetStatus('idle');
+                                setResetMessage('');
+                                setResetEmail('');
+                            }}
+                            className="w-full py-3 text-slate-500 hover:text-slate-800 font-bold flex items-center justify-center gap-2 transition-colors mt-2"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> {language === 'es' ? 'Volver al inicio de sesión' : 'Back to login'}
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-5 text-left animate-in fade-in slide-in-from-left-4 duration-300">
+                        {error && (
+                            <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-200 text-sm font-medium">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                {error}
+                            </div>
+                        )}
+                        
+                        <div className="space-y-2">
+                            <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">{t('login.email')}</label>
+                            <input 
+                                id="email"
+                                name="email"
+                                type="email" 
+                                required
+                                autoComplete="email"
+                                placeholder="admin@l1nx.com"
+                                className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 text-slate-800 outline-none transition-all"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label htmlFor="password" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">{language === 'es' ? 'Contraseña' : 'Password'}</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsResetting(true)}
+                                    className="text-xs font-bold text-primary hover:text-primary-dark transition-colors"
+                                >
+                                    {language === 'es' ? '¿Olvidaste tu contraseña?' : 'Forgot password?'}
+                                </button>
+                            </div>
+                            <input 
+                                id="password"
+                                name="password"
+                                type="password" 
+                                required
+                                autoComplete="current-password"
+                                placeholder="••••••••"
+                                className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-3 px-4 text-slate-800 outline-none transition-all"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                            />
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting}
+                            className="w-full bg-primary hover:bg-[#D98201] text-white py-4 mt-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary/20"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <LogIn className="w-5 h-5" /> {t('login.enter')}
+                                </>
+                            )}
+                        </button>
+                    </form>
+                )}
             </div>
         </div>
     );

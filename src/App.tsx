@@ -8,6 +8,7 @@ import MediaLibrary from './pages/MediaLibrary';
 import PlaylistManagement from './pages/PlaylistManagement';
 import Publish from './pages/Publish';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
 import PrivateRoute from './components/PrivateRoute';
@@ -49,6 +50,7 @@ function App() {
             <LanguageProvider>
               <Routes>
                   <Route path="/login" element={<Login />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route element={<PrivateRoute />}>
                       <Route path="/*" element={<DashboardLayout />} />
                   </Route>
