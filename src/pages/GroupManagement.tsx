@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Settings, Monitor, Loader2, X, Folder, PlayCircle, Smartphone, CalendarClock, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, Settings, Monitor, Loader2, X, Folder, PlayCircle, Smartphone, CalendarClock, LayoutGrid, RefreshCw, Pencil } from 'lucide-react';
 import { pb, type Device, type DeviceGroup } from '../lib/pocketbase';
 import ConfigForm from '../components/ConfigForm';
 import ScheduleManagement from '../components/ScheduleManagement';
@@ -22,7 +22,8 @@ export default function GroupManagement() {
     const [viewingScreensGroup, setViewingScreensGroup] = useState<DeviceGroup | null>(null);
     const [groupScreens, setGroupScreens] = useState<Device[]>([]);
     const [isLoadingScreens, setIsLoadingScreens] = useState(false);
-    const [newGroupName, setNewGroupName] = useState('');
+    const [editingGroupNameId, setEditingGroupNameId] = useState<string | null>(null);
+    const [tempGroupName, setTempGroupName] = useState('');
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const { activeOrganization } = useOrganization();
     const { hasPermission } = useAuth();
@@ -82,21 +83,36 @@ export default function GroupManagement() {
 
     const handleCreateGroup = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newGroupName.trim()) return;
+        if (!tempGroupName.trim()) return;
 
         setIsCreating(true);
         setStatus(null);
         try {
             if (!activeOrganization) throw new Error("No organization selected");
             await pb.collection('device_groups').create({ 
-                name: newGroupName,
+                name: tempGroupName,
                 organization: activeOrganization.id
             });
-            setNewGroupName('');
+            setTempGroupName('');
             setShowCreateModal(false);
             fetchGroups();
         } catch (err: any) {
             setStatus({ type: 'error', message: language === 'es' ? "Error al crear el grupo." : "Error creating group." });
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const handleUpdateGroupName = async (groupId: string) => {
+        if (!tempGroupName.trim()) return;
+        setIsCreating(true);
+        try {
+            await pb.collection('device_groups').update(groupId, { name: tempGroupName.trim() });
+            setEditingGroupNameId(null);
+            await fetchGroups();
+        } catch (err: any) {
+            console.error("Error updating group name:", err);
+            alert(language === 'es' ? "Error al actualizar el nombre del grupo." : "Error updating group name.");
         } finally {
             setIsCreating(false);
         }
@@ -186,7 +202,49 @@ export default function GroupManagement() {
                             </div>
 
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-1">{group.name}</h3>
+                                {editingGroupNameId === group.id ? (
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            className="w-full text-lg font-bold text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={tempGroupName}
+                                            onChange={(e) => setTempGroupName(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleUpdateGroupName(group.id);
+                                                if (e.key === 'Escape') setEditingGroupNameId(null);
+                                            }}
+                                            disabled={isCreating}
+                                        />
+                                        <button 
+                                            onClick={() => handleUpdateGroupName(group.id)}
+                                            className="p-2 bg-primary text-white rounded-xl shadow-sm disabled:opacity-50"
+                                            disabled={isCreating}
+                                        >
+                                            <RefreshCw className={`w-4 h-4 ${isCreating ? 'animate-spin' : ''}`} />
+                                        </button>
+                                        <button 
+                                            onClick={() => setEditingGroupNameId(null)}
+                                            className="p-2 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200"
+                                            disabled={isCreating}
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 group/name-edit mb-1">
+                                        <h3 className="text-xl font-bold text-slate-800 leading-tight">{group.name}</h3>
+                                        {canManageContent && (
+                                            <button 
+                                                onClick={() => { setEditingGroupNameId(group.id); setTempGroupName(group.name); }}
+                                                className="p-1 opacity-0 group-hover/name-edit:opacity-100 text-slate-300 hover:text-primary transition-all"
+                                                title="Editar nombre"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                                 <button
                                     onClick={() => handleViewScreens(group)}
                                     className="flex items-center gap-2 text-slate-400 text-sm hover:text-primary transition-colors group/count"
@@ -228,15 +286,15 @@ export default function GroupManagement() {
                                 <input
                                     type="text"
                                     autoFocus
-                                    value={newGroupName}
-                                    onChange={(e) => setNewGroupName(e.target.value)}
+                                    value={tempGroupName}
+                                    onChange={(e) => setTempGroupName(e.target.value)}
                                     placeholder={language === 'es' ? "Ej. Entrada, Piso 2..." : "e.g. Lobby Entrance, Floor 2..."}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800"
                                 />
                             </div>
                             <button
                                 type="submit"
-                                disabled={isCreating || !newGroupName.trim()}
+                                disabled={isCreating || !tempGroupName.trim()}
                                 className="w-full btn-primary flex justify-center py-4"
                             >
                                 {isCreating ? <Loader2 className="w-6 h-6 animate-spin" /> : t('groups.newGroup')}
