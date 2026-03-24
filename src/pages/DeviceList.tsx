@@ -14,6 +14,8 @@ export default function DeviceList() {
     const [groups, setGroups] = useState<{ id: string, name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
+    const [editingNameDeviceId, setEditingNameDeviceId] = useState<string | null>(null);
+    const [tempName, setTempName] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
     const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
     const [deleteInput, setDeleteInput] = useState('');
@@ -109,6 +111,20 @@ export default function DeviceList() {
             await fetchDevices();
         } catch (err) {
             console.error("Error updating device group:", err);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+    
+    const handleUpdateName = async (deviceId: string) => {
+        if (!tempName.trim()) return;
+        setIsUpdating(true);
+        try {
+            await pb.collection('devices').update(deviceId, { name: tempName.trim() });
+            setEditingNameDeviceId(null);
+            await fetchDevices();
+        } catch (err) {
+            console.error("Error updating device name:", err);
         } finally {
             setIsUpdating(false);
         }
@@ -216,7 +232,41 @@ export default function DeviceList() {
                                 </div>
 
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-800 leading-tight mb-1">{device.name}</h3>
+                                    {editingNameDeviceId === device.id ? (
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                className="w-full text-lg font-bold text-slate-800 bg-white border border-slate-200 px-3 py-2 rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+                                                value={tempName}
+                                                onChange={(e) => setTempName(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleUpdateName(device.id);
+                                                    if (e.key === 'Escape') setEditingNameDeviceId(null);
+                                                }}
+                                                disabled={isUpdating}
+                                            />
+                                            <button 
+                                                onClick={() => handleUpdateName(device.id)}
+                                                className="p-2 bg-primary text-white rounded-xl shadow-sm disabled:opacity-50"
+                                                disabled={isUpdating}
+                                            >
+                                                <RefreshCw className={`w-5 h-5 ${isUpdating ? 'animate-spin' : ''}`} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 group/name mb-1">
+                                            <h3 className="text-xl font-bold text-slate-800 leading-tight">{device.name}</h3>
+                                            {canManageContent && (
+                                                <button 
+                                                    onClick={() => { setEditingNameDeviceId(device.id); setTempName(device.name); }}
+                                                    className="text-slate-300 hover:text-primary transition-colors"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                     <p className="text-[10px] text-slate-400 font-mono uppercase tracking-tighter opacity-70">ID: {device.id}</p>
                                 </div>
 
@@ -279,10 +329,52 @@ export default function DeviceList() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div>
-                                                    <p className="font-bold text-slate-800">{device.name}</p>
-                                                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{device.id}</p>
-                                                </div>
+                                                {editingNameDeviceId === device.id ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            className="text-sm font-bold text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-lg outline-none focus:border-primary transition-all min-w-[200px]"
+                                                            value={tempName}
+                                                            onChange={(e) => setTempName(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') handleUpdateName(device.id);
+                                                                if (e.key === 'Escape') setEditingNameDeviceId(null);
+                                                            }}
+                                                            disabled={isUpdating}
+                                                        />
+                                                        <button
+                                                            onClick={() => handleUpdateName(device.id)}
+                                                            className="p-1.5 bg-primary text-white rounded-lg shadow-sm disabled:opacity-50"
+                                                            disabled={isUpdating}
+                                                        >
+                                                            <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? 'animate-spin' : ''}`} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setEditingNameDeviceId(null)}
+                                                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400"
+                                                            disabled={isUpdating}
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2 group/name-edit">
+                                                        <div>
+                                                            <p className="font-bold text-slate-800">{device.name}</p>
+                                                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{device.id}</p>
+                                                        </div>
+                                                        {canManageContent && (
+                                                            <button
+                                                                onClick={() => { setEditingNameDeviceId(device.id); setTempName(device.name); }}
+                                                                className="p-1.5 opacity-0 group-hover/name-edit:opacity-100 hover:bg-white hover:shadow-sm hover:text-primary rounded-lg transition-all text-slate-400"
+                                                                title="Editar nombre"
+                                                            >
+                                                                <Pencil className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {editingDeviceId === device.id ? (
