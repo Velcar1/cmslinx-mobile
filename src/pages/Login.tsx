@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { Loader2, LogIn, AlertCircle, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { pb } from '../lib/pocketbase';
+import PocketBase from 'pocketbase';
 
 export default function Login() {
     const { t, language } = useLanguage();
@@ -18,7 +19,12 @@ export default function Login() {
     const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [resetMessage, setResetMessage] = useState('');
     
-    const { login, user } = useAuth();
+    // OTP state
+    const [isOTPMode, setIsOTPMode] = useState(false);
+    const [otpCode, setOtpCode] = useState('');
+    const [otpId, setOtpId] = useState('');
+
+    const { user } = useAuth();
 
     // If already logged in, redirect to home
     if (user) {
@@ -31,11 +37,35 @@ export default function Login() {
         setIsSubmitting(true);
 
         try {
-            await login(email, password);
-            // navigate is handled inside login()
+            // Validate password first using a temporary PB instance
+            // We use tempPb so we don't accidentally log the user in if OTP is required
+            const pbUrl = import.meta.env.VITE_PB_URL || 'http://127.0.0.1:8090';
+            const tempPb = new PocketBase(pbUrl);
+            await tempPb.collection('users').authWithPassword(email, password);
+            
+            // Password is correct, now request OTP
+            const req = await pb.collection('users').requestOTP(email);
+            setOtpId(req.otpId);
+            setIsOTPMode(true);
         } catch (err: any) {
             console.error('Login error:', err);
             setError(t('login.error'));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleVerifyOTP = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsSubmitting(true);
+
+        try {
+            // This will authenticate the user and update pb.authStore, triggering AuthContext
+            await pb.collection('users').authWithOTP(otpId, otpCode);
+        } catch (err: any) {
+            console.error('OTP verify error:', err);
+            setError(language === 'es' ? 'Código incorrecto o expirado.' : 'Incorrect or expired code.');
         } finally {
             setIsSubmitting(false);
         }
@@ -69,7 +99,63 @@ export default function Login() {
                 <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-0.5">{t('login.welcome')}</h1>
                 <p className="text-slate-500 mb-3">{isResetting ? (language === 'es' ? 'Ingresa tu correo para recuperar tu acceso' : 'Enter your email to recover your access') : t('login.subtitle')}</p>
                 
-                {isResetting ? (
+                {isOTPMode ? (
+                    <form onSubmit={handleVerifyOTP} className="space-y-5 text-left animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl flex items-center gap-3 border border-emerald-200 text-sm font-medium mb-4">
+                            <Mail className="w-5 h-5 flex-shrink-0" />
+                            {language === 'es' ? 'Se ha enviado un código a tu correo.' : 'A code has been sent to your email.'}
+                        </div>
+                        
+                        {error && (
+                            <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-200 text-sm font-medium mb-4">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                {error}
+                            </div>
+                        )}
+                        
+                        <div className="space-y-2">
+                            <label htmlFor="otpCode" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                                {language === 'es' ? 'Código OTP' : 'OTP Code'}
+                            </label>
+                            <input 
+                                id="otpCode"
+                                type="text"
+                                required
+                                placeholder="123456"
+                                className="w-full bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-4 px-4 text-center text-2xl tracking-widest font-mono text-slate-800 outline-none transition-all"
+                                value={otpCode}
+                                onChange={e => setOtpCode(e.target.value)}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting || !otpCode}
+                            className="w-full bg-primary hover:bg-[#D98201] text-white py-4 mt-6 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary/20"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="w-5 h-5" /> {language === 'es' ? 'Verificar Código' : 'Verify Code'}
+                                </>
+                            )}
+                        </button>
+
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                setIsOTPMode(false);
+                                setOtpCode('');
+                                setError('');
+                            }}
+                            className="w-full py-3 text-slate-500 hover:text-slate-800 font-bold flex items-center justify-center gap-2 transition-colors mt-2"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> {language === 'es' ? 'Volver al inicio de sesión' : 'Back to login'}
+                        </button>
+                    </form>
+                ) : isResetting ? (
                     <form onSubmit={handleResetPassword} className="space-y-4 text-left animate-in fade-in slide-in-from-right-4 duration-300">
                         {resetStatus === 'error' && (
                             <div className="bg-red-50 text-red-700 p-4 rounded-xl flex items-center gap-3 border border-red-200 text-sm font-medium">
