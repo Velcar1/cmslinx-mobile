@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useOrganization } from '../context/OrganizationContext';
 import { pb, type User, type Organization } from '../lib/pocketbase';
-import { Plus, Loader2, User as UserIcon, Building2, Shield, Search, X, Trash2, Users } from 'lucide-react';
+import { Plus, Loader2, User as UserIcon, Building2, Shield, Search, X, Trash2, Users, Pencil } from 'lucide-react';
 
 export default function UserManagement() {
     const { user: currentUser, hasPermission } = useAuth();
@@ -12,6 +12,7 @@ export default function UserManagement() {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
     
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -130,6 +131,52 @@ export default function UserManagement() {
         }
     };
 
+    const handleUpdateRole = async (userId: string, newRole: User['role']) => {
+        if (userId === currentUser?.id) {
+            alert('No puedes cambiar tu propio rol');
+            return;
+        }
+
+        setUpdatingUserId(userId);
+        try {
+            const data: any = { role: newRole };
+            
+            // If changing to superadmin, remove organization association
+            if (newRole === 'superadmin') {
+                data.organization = null;
+            } else {
+                // Changing FROM superadmin to something else? 
+                // Or user just doesn't have an organization yet.
+                const userObj = users.find(u => u.id === userId);
+                if ((!userObj?.organization || userObj.role === 'superadmin') && activeOrganization) {
+                    data.organization = activeOrganization.id;
+                }
+            }
+
+            await pb.collection('users').update(userId, data);
+            
+            // Update local state
+            setUsers(users.map(u => 
+                u.id === userId 
+                    ? { 
+                        ...u, 
+                        role: newRole, 
+                        organization: data.organization === null ? undefined : (data.organization || u.organization),
+                        expand: {
+                            ...u.expand,
+                            organization: data.organization === null ? undefined : (data.organization ? (activeOrganization || undefined) : u.expand?.organization)
+                        }
+                    } as User
+                    : u
+            ));
+        } catch (error: any) {
+            console.error('Error updating role:', error);
+            alert(error.message || 'Error al actualizar el rol');
+        } finally {
+            setUpdatingUserId(null);
+        }
+    };
+
     if (!hasPermission('manage_users')) {
         return (
             <div className="flex flex-col items-center justify-center py-20 bg-slate-50/50 border-dashed border-slate-200 rounded-3xl">
@@ -225,14 +272,42 @@ export default function UserManagement() {
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-200/50">
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                            user.role === 'superadmin' ? 'bg-red-100 text-red-700' :
-                                            user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
-                                            user.role === 'content_manager' ? 'bg-green-100 text-green-700' :
-                                            'bg-slate-200 text-slate-700'
-                                        }`}>
-                                            {translateRole(user.role)}
-                                        </span>
+                                        {isSuperadmin && user.id !== currentUser?.id ? (
+                                            <div className="relative">
+                                                <select
+                                                    value={user.role}
+                                                    onChange={(e) => handleUpdateRole(user.id, e.target.value as User['role'])}
+                                                    disabled={updatingUserId === user.id}
+                                                    className={`appearance-none inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer pr-6 border-none ${
+                                                        user.role === 'superadmin' ? 'bg-red-100 text-red-700' :
+                                                        user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
+                                                        user.role === 'content_manager' ? 'bg-green-100 text-green-700' :
+                                                        'bg-slate-200 text-slate-700'
+                                                    }`}
+                                                >
+                                                    <option value="superadmin">Superadmin</option>
+                                                    <option value="admin">Admin Local</option>
+                                                    <option value="content_manager">Gestor</option>
+                                                    <option value="viewer">Lector</option>
+                                                </select>
+                                                <div className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                                                    {updatingUserId === user.id ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin border-none" />
+                                                    ) : (
+                                                        <Pencil className="w-3 h-3 border-none" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                user.role === 'superadmin' ? 'bg-red-100 text-red-700' :
+                                                user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
+                                                user.role === 'content_manager' ? 'bg-green-100 text-green-700' :
+                                                'bg-slate-200 text-slate-700'
+                                            }`}>
+                                                {translateRole(user.role)}
+                                            </span>
+                                        )}
                                         
                                         {isSuperadmin && (
                                             user.role === 'superadmin' ? (
@@ -291,14 +366,42 @@ export default function UserManagement() {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                                user.role === 'superadmin' ? 'bg-red-100 text-red-700' :
-                                                user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
-                                                user.role === 'content_manager' ? 'bg-green-100 text-green-700' :
-                                                'bg-slate-100 text-slate-700'
-                                            }`}>
-                                                {translateRole(user.role)}
-                                            </span>
+                                            {isSuperadmin && user.id !== currentUser?.id ? (
+                                                <div className="relative inline-block">
+                                                    <select
+                                                        value={user.role}
+                                                        onChange={(e) => handleUpdateRole(user.id, e.target.value as User['role'])}
+                                                        disabled={updatingUserId === user.id}
+                                                        className={`appearance-none inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold outline-none cursor-pointer pr-8 border-none ${
+                                                            user.role === 'superadmin' ? 'bg-red-100 text-red-700' :
+                                                            user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
+                                                            user.role === 'content_manager' ? 'bg-green-100 text-green-700' :
+                                                            'bg-slate-100 text-slate-700'
+                                                        }`}
+                                                    >
+                                                        <option value="superadmin">Superadmin</option>
+                                                        <option value="admin">Administrador Local</option>
+                                                        <option value="content_manager">Gestor de Contenido</option>
+                                                        <option value="viewer">Solo Lectura</option>
+                                                    </select>
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                                                        {updatingUserId === user.id ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                        ) : (
+                                                            <Pencil className="w-3 h-3" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                    user.role === 'superadmin' ? 'bg-red-100 text-red-700' :
+                                                    user.role === 'admin' ? 'bg-blue-100 text-blue-700' :
+                                                    user.role === 'content_manager' ? 'bg-green-100 text-green-700' :
+                                                    'bg-slate-100 text-slate-700'
+                                                }`}>
+                                                    {translateRole(user.role)}
+                                                </span>
+                                            )}
                                         </td>
                                         {isSuperadmin && (
                                             <td className="p-4">
