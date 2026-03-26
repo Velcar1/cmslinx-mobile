@@ -54,6 +54,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
     }, [navigate, location]);
 
+    // Inactivity timeout
+    useEffect(() => {
+        if (!user) return; // Only track if logged in
+
+        let timeoutId: number;
+        const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+        const logoutDueToInactivity = () => {
+            pb.authStore.clear();
+            navigate('/login', { replace: true });
+        };
+
+        const handleActivity = () => {
+            if (timeoutId) {
+                window.clearTimeout(timeoutId);
+            }
+            timeoutId = window.setTimeout(logoutDueToInactivity, TIMEOUT_MS);
+        };
+
+        // Standard user activity events
+        const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+
+        // Initialize the timer
+        handleActivity();
+        
+        events.forEach(event => {
+            window.addEventListener(event, handleActivity);
+        });
+
+        return () => {
+            if (timeoutId) window.clearTimeout(timeoutId);
+            events.forEach(event => {
+                window.removeEventListener(event, handleActivity);
+            });
+        };
+    }, [user, navigate]);
+
     const login = async (email: string, pass: string) => {
         setIsLoading(true);
         try {
