@@ -137,6 +137,15 @@ export default function UserManagement() {
             return;
         }
 
+        const targetUser = users.find(u => u.id === userId);
+        if (!targetUser) return;
+
+        // Security check: only superadmins can assign superadmin role
+        if (newRole === 'superadmin' && !isSuperadmin) {
+            alert('No tienes permisos para asignar el rol de Superadmin');
+            return;
+        }
+
         setUpdatingUserId(userId);
         try {
             const data: any = { role: newRole };
@@ -145,10 +154,10 @@ export default function UserManagement() {
             if (newRole === 'superadmin') {
                 data.organization = null;
             } else {
-                // Changing FROM superadmin to something else? 
-                // Or user just doesn't have an organization yet.
-                const userObj = users.find(u => u.id === userId);
-                if ((!userObj?.organization || userObj.role === 'superadmin') && activeOrganization) {
+                // If it's a local admin, ensure they set their own organization or keep current
+                if (!isSuperadmin) {
+                    data.organization = currentUser?.organization || targetUser.organization;
+                } else if ((!targetUser.organization || targetUser.role === 'superadmin') && activeOrganization) {
                     data.organization = activeOrganization.id;
                 }
             }
@@ -161,10 +170,10 @@ export default function UserManagement() {
                     ? { 
                         ...u, 
                         role: newRole, 
-                        organization: data.organization === null ? undefined : (data.organization || u.organization),
+                        organization: data.organization !== undefined ? (data.organization || undefined) : u.organization,
                         expand: {
                             ...u.expand,
-                            organization: data.organization === null ? undefined : (data.organization ? (activeOrganization || undefined) : u.expand?.organization)
+                            organization: data.organization === null ? undefined : (data.organization ? (isSuperadmin ? (activeOrganization || undefined) : u.expand?.organization) : u.expand?.organization)
                         }
                     } as User
                     : u
@@ -175,6 +184,20 @@ export default function UserManagement() {
         } finally {
             setUpdatingUserId(null);
         }
+    };
+
+    const canUserEditRole = (targetUser: User) => {
+        if (!currentUser || targetUser.id === currentUser.id) return false;
+        
+        // Superadmin can edit anyone else
+        if (isSuperadmin) return true;
+        
+        // Local admin can edit users in their organization, IF the target is not a superadmin
+        if (currentUser.role === 'admin') {
+            return targetUser.organization === currentUser.organization && targetUser.role !== 'superadmin';
+        }
+        
+        return false;
     };
 
     if (!hasPermission('manage_users')) {
@@ -272,7 +295,7 @@ export default function UserManagement() {
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-200/50">
-                                        {isSuperadmin && user.id !== currentUser?.id ? (
+                                        {canUserEditRole(user) ? (
                                             <div className="relative">
                                                 <select
                                                     value={user.role}
@@ -285,7 +308,7 @@ export default function UserManagement() {
                                                         'bg-slate-200 text-slate-700'
                                                     }`}
                                                 >
-                                                    <option value="superadmin">Superadmin</option>
+                                                    {isSuperadmin && <option value="superadmin">Superadmin</option>}
                                                     <option value="admin">Admin Local</option>
                                                     <option value="content_manager">Gestor</option>
                                                     <option value="viewer">Lector</option>
@@ -366,7 +389,7 @@ export default function UserManagement() {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            {isSuperadmin && user.id !== currentUser?.id ? (
+                                            {canUserEditRole(user) ? (
                                                 <div className="relative inline-block">
                                                     <select
                                                         value={user.role}
@@ -379,7 +402,7 @@ export default function UserManagement() {
                                                             'bg-slate-100 text-slate-700'
                                                         }`}
                                                     >
-                                                        <option value="superadmin">Superadmin</option>
+                                                        {isSuperadmin && <option value="superadmin">Superadmin</option>}
                                                         <option value="admin">Administrador Local</option>
                                                         <option value="content_manager">Gestor de Contenido</option>
                                                         <option value="viewer">Solo Lectura</option>
