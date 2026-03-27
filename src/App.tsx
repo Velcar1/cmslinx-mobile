@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
+import Monitor from './pages/Monitor';
 import PrivateRoute from './components/PrivateRoute';
 
 import { OrganizationProvider } from './context/OrganizationContext';
@@ -34,6 +35,7 @@ function DashboardLayout() {
                             <Route path="/publish" element={<Publish />} />
                             <Route path="/users" element={<UserManagement />} />
                             <Route path="/settings" element={<Settings />} />
+                            <Route path="/monitor" element={<Monitor />} />
                         </Routes>
                     </div>
                 </main>

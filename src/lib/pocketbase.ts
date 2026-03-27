@@ -101,3 +101,18 @@ export interface PWAConfig {
         playlist?: Playlist;
     };
 }
+
+export interface DeviceHeartbeat {
+    id: string;
+    device: string;
+    group: string;
+    organization: string;
+    status: 'online' | 'offline' | 'error';
+    created?: string;
+    updated?: string;
+    expand?: {
+        device?: Device;
+        group?: DeviceGroup;
+        organization?: Organization;
+    };
+}

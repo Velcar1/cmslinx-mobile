@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X, Users, LogOut, Menu, Send } from 'lucide-react';
+import { MonitorPlay, Folder, Image, List, Settings, LayoutDashboard, Building2, ChevronDown, Plus, Loader2, X, Users, LogOut, Menu, Send, Activity } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
@@ -68,6 +68,7 @@ export default function Navigation() {
         { path: '/media', label: t('common.media'), icon: Image, show: true },
         { path: '/playlists', label: t('common.playlists'), icon: List, show: true },
         { path: '/users', label: t('common.users'), icon: Users, show: canManageUsers },
+        { path: '/monitor', label: 'Monitoreo', icon: Activity, show: true },
     ];
 
     return (
