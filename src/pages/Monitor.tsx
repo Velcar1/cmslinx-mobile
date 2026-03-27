@@ -82,7 +82,7 @@ export default function Monitor() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                         <div className="p-2.5 bg-primary/10 rounded-2xl">
                             <Activity className="w-7 h-7 text-primary" />
                         </div>
@@ -95,7 +95,7 @@ export default function Monitor() {
                 <button
                     onClick={fetchHeartbeats}
                     disabled={isLoading}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium text-slate-300 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-xl text-sm font-medium text-primary transition-all disabled:opacity-50"
                 >
                     <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                     Actualizar
@@ -104,16 +104,16 @@ export default function Monitor() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
                     <div className="p-3 bg-blue-500/10 rounded-xl">
                         <MonitorIcon className="w-6 h-6 text-blue-400" />
                     </div>
                     <div>
                         <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">Pantallas</p>
-                        <p className="text-2xl font-black text-white">{summaryList.length}</p>
+                        <p className="text-2xl font-black text-slate-900">{summaryList.length}</p>
                     </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
                     <div className="p-3 bg-emerald-500/10 rounded-xl">
                         <Wifi className="w-6 h-6 text-emerald-400" />
                     </div>
@@ -122,7 +122,7 @@ export default function Monitor() {
                         <p className="text-2xl font-black text-emerald-400">{onlineCount}</p>
                     </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
                     <div className="p-3 bg-rose-500/10 rounded-xl">
                         <WifiOff className="w-6 h-6 text-rose-400" />
                     </div>
@@ -136,17 +136,17 @@ export default function Monitor() {
             {/* Device Status Grid */}
             {summaryList.length > 0 && (
                 <div>
-                    <h2 className="text-lg font-bold text-white mb-3">Estado de Pantallas</h2>
+                    <h2 className="text-lg font-bold text-slate-800 mb-3 uppercase tracking-wide text-xs">Estado de Pantallas</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {summaryList.map(device => {
                             const ago = minutesAgo(device.created!);
                             const isOnline = ago <= 15;
                             return (
-                                <div key={device.device} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+                                <div key={device.device} className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
                                     <div className={`w-3 h-3 rounded-full shrink-0 ${isOnline ? 'bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.4)]' : 'bg-rose-400'}`} />
                                     <div className="flex-1 overflow-hidden">
-                                        <p className="font-bold text-white text-sm truncate">{device.deviceName}</p>
-                                        <p className="text-xs text-slate-400 flex items-center gap-1 truncate">
+                                        <p className="font-bold text-slate-800 text-sm truncate">{device.deviceName}</p>
+                                        <p className="text-xs text-slate-500 flex items-center gap-1 truncate font-medium">
                                             <Layers className="w-3 h-3 shrink-0" />{device.groupName}
                                         </p>
                                     </div>
@@ -165,7 +165,7 @@ export default function Monitor() {
 
             {/* Timeline */}
             <div>
-                <h2 className="text-lg font-bold text-white mb-3">Historial de Actividad</h2>
+                <h2 className="text-lg font-bold text-slate-800 mb-3 uppercase tracking-wide text-xs">Historial de Actividad</h2>
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20 text-slate-400">
                         <RefreshCw className="w-5 h-5 animate-spin mr-3" />Cargando...
@@ -180,7 +180,7 @@ export default function Monitor() {
                 ) : (
                     <div className="relative">
                         {/* Timeline line */}
-                        <div className="absolute left-[18px] top-0 bottom-0 w-px bg-white/10" />
+                        <div className="absolute left-[18px] top-0 bottom-0 w-px bg-slate-200" />
                         <div className="space-y-3">
                             {heartbeats.map((hb, i) => {
                                 const ago = minutesAgo(hb.created!);
@@ -195,12 +195,12 @@ export default function Monitor() {
                                             }
                                         </div>
                                         {/* Card */}
-                                        <div className={`flex-1 bg-white/5 border rounded-xl px-4 py-3 ${i === 0 ? 'border-primary/30' : 'border-white/10'}`}>
+                                        <div className={`flex-1 bg-white border shadow-sm rounded-xl px-4 py-3 ${i === 0 ? 'border-primary/30' : 'border-slate-200'}`}>
                                             <div className="flex flex-wrap items-center justify-between gap-2">
                                                 <div>
-                                                    <span className="font-bold text-white text-sm">{hb.deviceName}</span>
-                                                    <span className="mx-2 text-slate-600">·</span>
-                                                    <span className="text-xs text-slate-400">{hb.groupName}</span>
+                                                    <span className="font-bold text-slate-800 text-sm">{hb.deviceName}</span>
+                                                    <span className="mx-2 text-slate-400 opacity-50">·</span>
+                                                    <span className="text-xs text-slate-500 font-medium">{hb.groupName}</span>
                                                 </div>
                                                 <div className="text-right">
                                                     <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-400/10 text-emerald-400' : 'bg-rose-400/10 text-rose-400'}`}>
