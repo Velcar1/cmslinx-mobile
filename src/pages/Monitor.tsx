@@ -27,6 +27,7 @@ export default function Monitor() {
     const [isLoading, setIsLoading] = useState(true);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+    const [selectedGroupId, setSelectedGroupId] = useState<string>('');
 
     const fetchHeartbeats = useCallback(async () => {
         if (!activeOrganization) {
@@ -76,14 +77,27 @@ export default function Monitor() {
 
     const summaryList = Object.values(deviceSummary);
 
-    // Filter logic
-    const filteredSummaryList = selectedDeviceId 
-        ? summaryList.filter(d => d.device === selectedDeviceId)
-        : summaryList;
+    // Extract unique groups for filter
+    const uniqueGroups = Array.from(new Set(summaryList.map(d => JSON.stringify({ id: d.group, name: d.groupName }))))
+        .map(s => JSON.parse(s) as { id: string, name: string })
+        .sort((a, b) => a.name.localeCompare(b.name));
 
-    const filteredHeartbeats = selectedDeviceId
-        ? heartbeats.filter(hb => hb.device === selectedDeviceId)
-        : heartbeats;
+    // Filter logic
+    let filteredSummaryList = summaryList;
+    if (selectedGroupId) {
+        filteredSummaryList = filteredSummaryList.filter(d => d.group === selectedGroupId);
+    }
+    if (selectedDeviceId) {
+        filteredSummaryList = filteredSummaryList.filter(d => d.device === selectedDeviceId);
+    }
+
+    let filteredHeartbeats = heartbeats;
+    if (selectedGroupId) {
+        filteredHeartbeats = filteredHeartbeats.filter(hb => hb.group === selectedGroupId);
+    }
+    if (selectedDeviceId) {
+        filteredHeartbeats = filteredHeartbeats.filter(hb => hb.device === selectedDeviceId);
+    }
 
     const onlineCount = filteredSummaryList.filter(d => minutesAgo(d.created!) <= 15).length;
     const offlineCount = filteredSummaryList.length - onlineCount;
@@ -106,6 +120,25 @@ export default function Monitor() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    {/* Group Filter */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <Layers className="w-4 h-4 text-slate-400" />
+                        <select 
+                            value={selectedGroupId}
+                            onChange={(e) => {
+                                setSelectedGroupId(e.target.value);
+                                setSelectedDeviceId(''); // Reset device filter when group changes
+                            }}
+                            className="bg-transparent text-sm font-medium text-slate-700 focus:outline-none min-w-[150px]"
+                        >
+                            <option value="">Todos los grupos</option>
+                            {uniqueGroups.map(g => (
+                                <option key={g.id} value={g.id}>{g.name || 'Sin grupo'}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Device Filter */}
                     <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
                         <MonitorIcon className="w-4 h-4 text-slate-400" />
                         <select 
@@ -114,7 +147,7 @@ export default function Monitor() {
                             className="bg-transparent text-sm font-medium text-slate-700 focus:outline-none min-w-[150px]"
                         >
                             <option value="">Todas las pantallas</option>
-                            {summaryList.map(d => (
+                            {(selectedGroupId ? summaryList.filter(d => d.group === selectedGroupId) : summaryList).map(d => (
                                 <option key={d.device} value={d.device}>{d.deviceName}</option>
                             ))}
                         </select>
