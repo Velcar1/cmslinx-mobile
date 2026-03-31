@@ -26,6 +26,7 @@ export default function Monitor() {
     const [heartbeats, setHeartbeats] = useState<HeartbeatEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+    const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
 
     const fetchHeartbeats = useCallback(async () => {
         if (!activeOrganization) {
@@ -74,8 +75,20 @@ export default function Monitor() {
     }, {});
 
     const summaryList = Object.values(deviceSummary);
-    const onlineCount = summaryList.filter(d => minutesAgo(d.created!) <= 15).length;
-    const offlineCount = summaryList.length - onlineCount;
+
+    // Filter logic
+    const filteredSummaryList = selectedDeviceId 
+        ? summaryList.filter(d => d.device === selectedDeviceId)
+        : summaryList;
+
+    const filteredHeartbeats = selectedDeviceId
+        ? heartbeats.filter(hb => hb.device === selectedDeviceId)
+        : heartbeats;
+
+    const onlineCount = filteredSummaryList.filter(d => minutesAgo(d.created!) <= 15).length;
+    const offlineCount = filteredSummaryList.length - onlineCount;
+
+    // (Removed redundant Filter logic block)
 
     return (
         <div className="space-y-8">
@@ -92,14 +105,29 @@ export default function Monitor() {
                         {lastRefreshed ? `Última actualización: ${lastRefreshed.toLocaleTimeString()}` : 'Cargando...'}
                     </p>
                 </div>
-                <button
-                    onClick={fetchHeartbeats}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-xl text-sm font-medium text-primary transition-all disabled:opacity-50"
-                >
-                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    Actualizar
-                </button>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <MonitorIcon className="w-4 h-4 text-slate-400" />
+                        <select 
+                            value={selectedDeviceId}
+                            onChange={(e) => setSelectedDeviceId(e.target.value)}
+                            className="bg-transparent text-sm font-medium text-slate-700 focus:outline-none min-w-[150px]"
+                        >
+                            <option value="">Todas las pantallas</option>
+                            {summaryList.map(d => (
+                                <option key={d.device} value={d.device}>{d.deviceName}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <button
+                        onClick={fetchHeartbeats}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-xl text-sm font-medium text-primary transition-all disabled:opacity-50"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                        Actualizar
+                    </button>
+                </div>
             </div>
 
             {/* Summary Cards */}
@@ -110,7 +138,7 @@ export default function Monitor() {
                     </div>
                     <div>
                         <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">Pantallas</p>
-                        <p className="text-2xl font-black text-slate-900">{summaryList.length}</p>
+                        <p className="text-2xl font-black text-slate-900">{filteredSummaryList.length}</p>
                     </div>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
@@ -134,11 +162,11 @@ export default function Monitor() {
             </div>
 
             {/* Device Status Grid */}
-            {summaryList.length > 0 && (
+            {filteredSummaryList.length > 0 && (
                 <div>
                     <h2 className="text-lg font-bold text-slate-800 mb-3 uppercase tracking-wide text-xs">Estado de Pantallas</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {summaryList.map(device => {
+                        {filteredSummaryList.map(device => {
                             const ago = minutesAgo(device.created!);
                             const isOnline = ago <= 15;
                             return (
@@ -182,7 +210,7 @@ export default function Monitor() {
                         {/* Timeline line */}
                         <div className="absolute left-[18px] top-0 bottom-0 w-px bg-slate-200" />
                         <div className="space-y-3">
-                            {heartbeats.map((hb, i) => {
+                            {filteredHeartbeats.map((hb, i) => {
                                 const ago = minutesAgo(hb.created!);
                                 const isOnline = hb.status === 'online';
                                 return (
