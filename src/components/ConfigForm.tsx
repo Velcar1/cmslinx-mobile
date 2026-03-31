@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X, List, Link } from 'lucide-react';
+import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X, List, Link, FileCode } from 'lucide-react';
 import { pb, type PWAConfig, type Media, type Playlist } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
 import { Building2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist' | 'url_only';
+type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist' | 'url_only' | 'html_only';
 
 interface ConfigFormInputs {
     redirect_url: string;
@@ -180,6 +180,11 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
         return filename.toLowerCase().endsWith('.mp4');
     };
 
+    const isHtml = (filename: string) => {
+        if (!filename) return false;
+        return filename.toLowerCase().endsWith('.html');
+    };
+
     const onSubmit = async (data: ConfigFormInputs) => {
         if (!selectedGroup) {
             alert("Por favor cree un grupo primero.");
@@ -218,7 +223,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
             }
 
             // Required fields validation based on type
-            if ((contentType === 'video_interactive' || contentType === 'video_only' || contentType === 'image_only') && !selectedMedia) {
+            if ((contentType === 'video_interactive' || contentType === 'video_only' || contentType === 'image_only' || contentType === 'html_only') && !selectedMedia) {
                 throw new Error("Debe seleccionar un archivo multimedia para este tipo de contenido.");
             }
             if ((contentType === 'video_interactive' || contentType === 'video_only') && selectedMedia && !isVideo(selectedMedia.file)) {
@@ -226,6 +231,9 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
             }
             if (contentType === 'image_only' && selectedMedia && isVideo(selectedMedia.file)) {
                 throw new Error("Debe seleccionar un archivo de imagen para este tipo de contenido.");
+            }
+            if (contentType === 'html_only' && selectedMedia && !isHtml(selectedMedia.file)) {
+                throw new Error("Debe seleccionar un archivo HTML (.html) para este tipo de contenido.");
             }
             if (contentType === 'playlist' && !selectedPlaylistId) {
                 throw new Error("Debe seleccionar una Playlist para este tipo de contenido.");
@@ -300,6 +308,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
         { id: 'image_only', label: 'Solo Imagen', icon: ImageIcon, desc: 'Imagen fija en pantalla completa' },
         { id: 'web_only', label: 'Solo Web', icon: Globe, desc: 'Carga una página web directamente' },
         { id: 'url_only', label: t('playlists.typeUrl'), icon: Link, desc: t('playlists.typeUrlDesc') },
+        { id: 'html_only', label: t('playlists.typeHtml'), icon: FileCode, desc: t('playlists.typeHtmlDesc') },
     ];
 
     const showMediaSelector = contentType !== 'web_only' && contentType !== 'playlist' && contentType !== 'url_only';
@@ -433,7 +442,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                 {showMediaSelector && (
                                     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-left-4">
                                         <label className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                                            {contentType === 'image_only' ? <ImageIcon className="w-4 h-4 text-primary" /> : <FileVideo className="w-4 h-4 text-primary" />}
+                                            {contentType === 'image_only' ? <ImageIcon className="w-4 h-4 text-primary" /> : contentType === 'html_only' ? <FileCode className="w-4 h-4 text-primary" /> : <FileVideo className="w-4 h-4 text-primary" />}
                                             Archivo Multimedia
                                         </label>
                                         <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 hover:border-primary/50 transition-all flex flex-col items-center justify-center gap-4 min-h-[180px] bg-white">
@@ -584,11 +593,13 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                     {mediaList.map((media) => {
                                         const videoFile = isVideo(media.file);
+                                        const htmlFile = isHtml(media.file);
                                         const isSelected = selectedMedia?.id === media.id;
                                         // Validate file type based on selected content_type
                                         const isSelectable =
                                             ((contentType === 'video_interactive' || contentType === 'video_only') && videoFile) ||
-                                            (contentType === 'image_only' && !videoFile);
+                                            (contentType === 'image_only' && !videoFile && !htmlFile) ||
+                                            (contentType === 'html_only' && htmlFile);
 
                                         return (
                                             <div
@@ -604,6 +615,11 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                                     {videoFile ? (
                                                         <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
                                                             <Video className="w-8 h-8 text-white/50" />
+                                                        </div>
+                                                    ) : htmlFile ? (
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100">
+                                                            <FileCode className="w-10 h-10 text-primary" />
+                                                            <span className="text-[10px] font-bold text-primary mt-1">HTML</span>
                                                         </div>
                                                     ) : (
                                                         <img src={pb.files.getURL(media, media.file, { thumb: '300x300' })} alt={media.name} className="w-full h-full object-cover" />

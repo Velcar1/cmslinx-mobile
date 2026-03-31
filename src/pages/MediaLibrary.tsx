@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo, Building2 } from 'lucide-react';
+import { Loader2, UploadCloud, Trash2, Image as ImageIcon, Video, FileVideo, Building2, Globe, FileCode } from 'lucide-react';
 import { pb, type Media } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
@@ -101,6 +101,10 @@ export default function MediaLibrary() {
         return filename.toLowerCase().endsWith('.mp4');
     };
 
+    const isHtml = (filename: string) => {
+        return filename.toLowerCase().endsWith('.html');
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -114,7 +118,7 @@ export default function MediaLibrary() {
                         <input
                             type="file"
                             ref={fileInputRef}
-                            accept="image/*,video/mp4"
+                            accept="image/*,video/mp4,.html"
                             onChange={handleFileUpload}
                             className="hidden"
                         />
@@ -202,6 +206,19 @@ export default function MediaLibrary() {
                                                 <span className="text-[10px] text-white font-bold uppercase tracking-wider">{t('media.typeVideo')}</span>
                                             </div>
                                         </>
+                                    ) : isHtml(media.file) ? (
+                                        <>
+                                            <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-4">
+                                                <div className="p-4 bg-primary/10 rounded-2xl mb-2">
+                                                    <FileCode className="w-12 h-12 text-primary" />
+                                                </div>
+                                                <span className="text-xs font-bold text-slate-400">HTML document</span>
+                                            </div>
+                                             <div className="absolute top-3 left-3 bg-primary/90 backdrop-blur-md rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border border-white/20">
+                                                <Globe className="w-3.5 h-3.5 text-white" />
+                                                <span className="text-[10px] text-white font-bold uppercase tracking-wider">HTML</span>
+                                            </div>
+                                        </>
                                     ) : (
                                         <>
                                             <img src={fileUrl} alt={media.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -242,7 +259,7 @@ export default function MediaLibrary() {
                                             {media.id}
                                         </span>
                                         <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded">
-                                            {videoFile ? 'MP4' : 'STATIC'}
+                                            {videoFile ? 'MP4' : isHtml(media.file) ? 'HTML' : 'STATIC'}
                                         </span>
                                     </div>
                                 </div>

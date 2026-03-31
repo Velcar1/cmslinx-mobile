@@ -84,7 +84,7 @@ export interface PlaylistItem {
 
 export interface PWAConfig {
     id: string;
-    content_type: 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist' | 'url_only';
+    content_type: 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist' | 'url_only' | 'html_only';
     media?: string;
     playlist?: string;
     redirect_url: string;

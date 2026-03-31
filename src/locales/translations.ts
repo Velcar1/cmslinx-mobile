@@ -111,6 +111,8 @@ export const translations = {
             closeGallery: "Cerrar Galería",
             typeUrl: "URL",
             typeUrlDesc: "Contenido desde un enlace externo",
+            typeHtml: "Documento HTML",
+            typeHtmlDesc: "Sube y muestra un archivo .html propio",
         },
         login: {
             welcome: "Bienvenido",
@@ -232,6 +234,8 @@ export const translations = {
             closeGallery: "Close Gallery",
             typeUrl: "URL",
             typeUrlDesc: "Content from an external link",
+            typeHtml: "HTML Document",
+            typeHtmlDesc: "Upload and show your own .html file",
         },
         login: {
             welcome: "Welcome",
