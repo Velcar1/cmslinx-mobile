@@ -109,6 +109,8 @@ export const translations = {
             selectSubtitle: "Elige una lista del menú lateral o crea una nueva para gestionar su secuencia.",
             playlistName: "Nombre de la Lista",
             closeGallery: "Cerrar Galería",
+            typeUrl: "URL",
+            typeUrlDesc: "Contenido desde un enlace externo",
         },
         login: {
             welcome: "Bienvenido",
@@ -228,6 +230,8 @@ export const translations = {
             selectSubtitle: "Choose a list from the sidebar or create a new one to manage its sequence.",
             playlistName: "Playlist Name",
             closeGallery: "Close Gallery",
+            typeUrl: "URL",
+            typeUrlDesc: "Content from an external link",
         },
         login: {
             welcome: "Welcome",

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X, List } from 'lucide-react';
+import { Loader2, Save, FileVideo, CheckCircle2, Folder, Image as ImageIcon, Globe, Tv, MonitorPlay, Plus, Video, Trash2, X, List, Link } from 'lucide-react';
 import { pb, type PWAConfig, type Media, type Playlist } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
 import { Building2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist';
+type ContentType = 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist' | 'url_only';
 
 interface ConfigFormInputs {
     redirect_url: string;
@@ -50,7 +50,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('');
     const { activeOrganization } = useOrganization();
     const { hasPermission } = useAuth();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     
     const canManageContent = hasPermission('manage_content');
 
@@ -230,8 +230,8 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
             if (contentType === 'playlist' && !selectedPlaylistId) {
                 throw new Error("Debe seleccionar una Playlist para este tipo de contenido.");
             }
-            if ((contentType === 'video_interactive' || contentType === 'web_only') && !data.redirect_url) {
-                throw new Error("URL requerida para este tipo de contenido.");
+            if ((contentType === 'video_interactive' || contentType === 'web_only' || contentType === 'url_only') && !data.redirect_url) {
+                throw new Error(language === 'es' ? "URL requerida para este tipo de contenido." : "URL required for this content type.");
             }
 
             formData.append('redirect_url', data.redirect_url);
@@ -299,9 +299,10 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
         { id: 'playlist', label: 'Playlist', icon: List, desc: 'Secuencia de videos e imágenes' },
         { id: 'image_only', label: 'Solo Imagen', icon: ImageIcon, desc: 'Imagen fija en pantalla completa' },
         { id: 'web_only', label: 'Solo Web', icon: Globe, desc: 'Carga una página web directamente' },
+        { id: 'url_only', label: t('playlists.typeUrl'), icon: Link, desc: t('playlists.typeUrlDesc') },
     ];
 
-    const showMediaSelector = contentType !== 'web_only' && contentType !== 'playlist';
+    const showMediaSelector = contentType !== 'web_only' && contentType !== 'playlist' && contentType !== 'url_only';
     const showPlaylistSelector = contentType === 'playlist';
 
     return (
@@ -497,7 +498,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                 )}
 
                                 {/* Campo de URL */}
-                                {(contentType === 'video_interactive' || contentType === 'web_only') && (
+                                {(contentType === 'video_interactive' || contentType === 'web_only' || contentType === 'url_only') && (
                                     <div className={`flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 ${!showMediaSelector ? 'md:col-span-2' : ''}`}>
                                         <label htmlFor="redirect_url" className="text-sm font-semibold text-text-primary flex items-center gap-2">
                                             <Globe className="w-4 h-4 text-primary" /> {contentType === 'web_only' ? 'URL de la Página Web' : 'URL al tocar pantalla'}
