@@ -153,7 +153,11 @@ export default function DeviceList() {
         if (!config) return 'Idle';
         if (config.content_type === 'playlist') return 'Playlist active';
         if (config.expand?.media) return config.expand.media.name;
+        if (config.redirect_url) return config.redirect_url;
+        
+        // Fallbacks
         if (config.content_type === 'web_only') return 'Web Content';
+        if (config.content_type === 'url_only') return 'URL Content';
         return 'Ready';
     };
 
