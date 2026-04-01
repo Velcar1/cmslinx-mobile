@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Trash2, RefreshCw, Monitor, Smartphone as DeviceIcon, Pencil, X, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, RefreshCw, Monitor, Smartphone as DeviceIcon, Pencil, X, AlertTriangle, Settings2, Volume2, Power, Tv } from 'lucide-react';
 import { pb, type Device, type PWAConfig } from '../lib/pocketbase';
 import { Link } from 'react-router-dom';
 import { useOrganization } from '../context/OrganizationContext';
@@ -18,6 +18,8 @@ export default function DeviceList() {
     const [tempName, setTempName] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
     const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
+    const [deviceToCommand, setDeviceToCommand] = useState<Device | null>(null);
+    const [commandVolume, setCommandVolume] = useState('50');
     const [deleteInput, setDeleteInput] = useState('');
     const { activeOrganization } = useOrganization();
     const { user, hasPermission } = useAuth();
@@ -135,6 +137,24 @@ export default function DeviceList() {
         setDeleteInput('');
     };
 
+    const handleCommandSend = async (command: string, payload: string = '') => {
+        if (!deviceToCommand) return;
+        setIsUpdating(true);
+        try {
+            await pb.collection('devices').update(deviceToCommand.id, {
+                command,
+                command_payload: payload,
+                command_timestamp: new Date().toISOString(),
+            });
+            alert(language === 'es' ? 'Comando enviado con éxito' : 'Command sent successfully');
+        } catch (err) {
+            console.error("Error sending command:", err);
+            alert("Error al enviar el comando");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     const confirmDelete = async () => {
         if (!deviceToDelete || deleteInput.toLowerCase() !== 'eliminar') return;
 
@@ -225,12 +245,21 @@ export default function DeviceList() {
                                             <RefreshCw className="w-4 h-4" />
                                         </button>
                                         {canManageContent && (
-                                            <button
-                                                onClick={() => handleDelete(device)}
-                                                className="p-2 bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-all"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => setDeviceToCommand(device)}
+                                                    className="p-2 bg-indigo-50 text-indigo-400 hover:text-indigo-600 rounded-xl transition-all"
+                                                    title={language === 'es' ? 'Control de Hardware' : 'Hardware Control'}
+                                                >
+                                                    <Settings2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(device)}
+                                                    className="p-2 bg-red-50 text-red-400 hover:text-red-600 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -430,13 +459,22 @@ export default function DeviceList() {
                                                         <RefreshCw className="w-4 h-4" />
                                                     </button>
                                                     {canManageContent && (
-                                                        <button
-                                                            onClick={() => handleDelete(device)}
-                                                            className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
-                                                            title={t('screens.unpair')}
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                onClick={() => setDeviceToCommand(device)}
+                                                                className="p-2 hover:bg-white hover:text-indigo-500 hover:shadow-sm rounded-lg transition-all"
+                                                                title={language === 'es' ? 'Control de Hardware' : 'Hardware Control'}
+                                                            >
+                                                                <Settings2 className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(device)}
+                                                                className="p-2 hover:bg-white hover:text-red-500 hover:shadow-sm rounded-lg transition-all"
+                                                                title={t('screens.unpair')}
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>
@@ -493,6 +531,87 @@ export default function DeviceList() {
                             >
                                 {t('screens.unpair')}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Hardware Command Modal */}
+            {deviceToCommand && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                                <div className="p-2.5 bg-indigo-50 rounded-2xl">
+                                    <Settings2 className="w-6 h-6 text-indigo-500" />
+                                </div>
+                                {language === 'es' ? 'Control Remoto' : 'Remote Control'}
+                            </h2>
+                            <button onClick={() => setDeviceToCommand(null)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-50 rounded-xl">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <p className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-wider">{deviceToCommand.name} - SAMSUNG TIZEN</p>
+
+                        <div className="space-y-6">
+                            {/* Option: Volume */}
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-bold text-slate-700 flex items-center gap-2"><Volume2 className="w-4 h-4 text-slate-400"/> Volumen</h3>
+                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{commandVolume}%</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <input 
+                                        type="range" min="0" max="100" 
+                                        value={commandVolume} 
+                                        onChange={e => setCommandVolume(e.target.value)}
+                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                    />
+                                    <button 
+                                        onClick={() => handleCommandSend('VOLUME', commandVolume)}
+                                        disabled={isUpdating}
+                                        className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl whitespace-nowrap disabled:opacity-50"
+                                    >
+                                        Aplicar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Option: Change Source */}
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-3"><Tv className="w-4 h-4 text-slate-400"/> Fuente de Video</h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['HDMI1', 'HDMI2', 'PC'].map(src => (
+                                        <button 
+                                            key={src}
+                                            onClick={() => handleCommandSend('SOURCE', src)}
+                                            disabled={isUpdating}
+                                            className="px-3 py-2 bg-white border border-slate-200 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 text-[11px] font-bold rounded-xl transition-all disabled:opacity-50 shadow-sm"
+                                        >
+                                            {src}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Option: Power Off */}
+                            <div className="bg-red-50 p-4 rounded-2xl border border-red-100 mt-2">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-red-700 flex items-center gap-2"><Power className="w-4 h-4"/> Apagar Pantalla</h3>
+                                        <p className="text-[10px] text-red-500 mt-1 max-w-[200px] leading-tight font-medium">Requerirá encendido físico o por API del sistema posterior.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleCommandSend('POWER_OFF')}
+                                        disabled={isUpdating}
+                                        className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        <Power className="w-3.5 h-3.5" />
+                                        Apagar
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

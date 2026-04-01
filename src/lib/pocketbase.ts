@@ -45,6 +45,9 @@ export interface Device {
     is_registered: boolean;
     group: string;
     organization: string;
+    command?: string;
+    command_payload?: string;
+    command_timestamp?: string;
     expand?: {
         group?: {
             name: string;
