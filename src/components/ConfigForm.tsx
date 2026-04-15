@@ -41,7 +41,9 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
 
     // Media Selection state
     const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
+    const [selectedInteractiveMedia, setSelectedInteractiveMedia] = useState<Media | null>(null);
     const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+    const [isInteractiveMediaModalOpen, setIsInteractiveMediaModalOpen] = useState(false);
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
@@ -103,11 +105,11 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
             try {
                 let record;
                 if (configToEdit) {
-                    record = await pb.collection('pwa_config').getOne<PWAConfig>(configToEdit, { expand: 'media,playlist' });
+                    record = await pb.collection('pwa_config').getOne<PWAConfig>(configToEdit, { expand: 'media,playlist,interactive_image' });
                 } else if (!isSchedule) {
                     record = await pb.collection('pwa_config').getFirstListItem<PWAConfig>(`group = "${selectedGroup}" && is_schedule != true`, {
                         sort: '-created',
-                        expand: 'media,playlist'
+                        expand: 'media,playlist,interactive_image'
                     });
                 }
 
@@ -124,6 +126,11 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                     if (record.expand && record.expand.media) {
                         setSelectedMedia(record.expand.media);
                     }
+                    if (record.expand && record.expand.interactive_image) {
+                        setSelectedInteractiveMedia(record.expand.interactive_image);
+                    } else {
+                        setSelectedInteractiveMedia(null);
+                    }
                     if (record.playlist) {
                         setSelectedPlaylistId(record.playlist);
                     } else {
@@ -139,6 +146,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                 if (err.status === 404) {
                     reset({ redirect_url: '', name_schedule: '', schedule_start: '', schedule_end: '' });
                     setSelectedMedia(null);
+                    setSelectedInteractiveMedia(null);
                     setContentType('video_interactive');
                 } else if (!err.isAbort) {
                     console.error('Error fetching config:', err);
@@ -171,8 +179,13 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
     };
 
     const handleSelectMedia = (media: Media) => {
-        setSelectedMedia(media);
-        setIsMediaModalOpen(false);
+        if (isInteractiveMediaModalOpen) {
+            setSelectedInteractiveMedia(media);
+            setIsInteractiveMediaModalOpen(false);
+        } else {
+            setSelectedMedia(media);
+            setIsMediaModalOpen(false);
+        }
     };
 
     const isVideo = (filename: string) => {
@@ -247,12 +260,19 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
             if (contentType === 'playlist') {
                 formData.append('playlist', selectedPlaylistId);
                 formData.append('media', ''); // clear media relation
+                formData.append('interactive_image', '');
             } else if (selectedMedia) {
                 formData.append('media', selectedMedia.id);
                 formData.append('playlist', ''); // clear playlist relation
+                if (contentType === 'video_interactive' && selectedInteractiveMedia) {
+                    formData.append('interactive_image', selectedInteractiveMedia.id);
+                } else {
+                    formData.append('interactive_image', '');
+                }
             } else {
                 formData.append('media', '');
                 formData.append('playlist', '');
+                formData.append('interactive_image', '');
             }
 
             let record;
@@ -506,6 +526,74 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                     </div>
                                 )}
 
+                                {/* Imagen Interactiva (paso intermedio) */}
+                                {contentType === 'video_interactive' && (
+                                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-left-4">
+                                        <label className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                                            <ImageIcon className="w-4 h-4 text-primary" />
+                                            Imagen Interactiva (Opcional)
+                                        </label>
+                                        <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 hover:border-primary/50 transition-all flex flex-col items-center justify-center gap-4 min-h-[180px] bg-white">
+                                            {selectedInteractiveMedia ? (
+                                                <div className="flex flex-col items-center text-center w-full">
+                                                    <div className="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 mb-3 border border-slate-200 flex items-center justify-center relative shadow-inner">
+                                                        <img
+                                                            src={pb.files.getURL(selectedInteractiveMedia, selectedInteractiveMedia.file, { thumb: '400x300' })}
+                                                            alt={selectedInteractiveMedia.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-700 truncate w-full px-2" title={selectedInteractiveMedia.name}>{selectedInteractiveMedia.name}</p>
+                                                    <div className="flex gap-2 mt-3 w-full">
+                                                        {canManageContent && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setIsInteractiveMediaModalOpen(true);
+                                                                        handleOpenMediaModal();
+                                                                    }}
+                                                                    className="flex-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-bold transition-colors"
+                                                                >
+                                                                    Cambiar
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedInteractiveMedia(null)}
+                                                                    className="px-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center w-full flex flex-col items-center">
+                                                    <div className="bg-primary/10 p-4 rounded-full mb-3">
+                                                        <ImageIcon className="w-8 h-8 text-primary" />
+                                                    </div>
+                                                    <p className="text-sm text-slate-500 mb-4 px-4">Esta imagen aparecerá antes de abrir la web</p>
+                                                    {canManageContent ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setIsInteractiveMediaModalOpen(true);
+                                                                handleOpenMediaModal();
+                                                            }}
+                                                            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm"
+                                                        >
+                                                            <Plus className="w-4 h-4" /> Elegir Imagen
+                                                        </button>
+                                                    ) : (
+                                                        <p className="text-sm font-bold text-slate-400">Sin archivo seleccionado</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Campo de URL */}
                                 {(contentType === 'video_interactive' || contentType === 'web_only' || contentType === 'url_only') && (
                                     <div className={`flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 ${!showMediaSelector ? 'md:col-span-2' : ''}`}>
@@ -562,7 +650,10 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                 <p className="text-sm text-slate-500">Elige un archivo para este grupo.</p>
                             </div>
                             <button
-                                onClick={() => setIsMediaModalOpen(false)}
+                                onClick={() => {
+                                    setIsMediaModalOpen(false);
+                                    setIsInteractiveMediaModalOpen(false);
+                                }}
                                 className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-full transition-colors"
                             >
                                 <X className="w-6 h-6" />
@@ -597,6 +688,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                         const isSelected = selectedMedia?.id === media.id;
                                         // Validate file type based on selected content_type
                                         const isSelectable =
+                                            isInteractiveMediaModalOpen ? !videoFile && !htmlFile :
                                             ((contentType === 'video_interactive' || contentType === 'video_only') && videoFile) ||
                                             (contentType === 'image_only' && !videoFile && !htmlFile) ||
                                             (contentType === 'html_only' && htmlFile);
@@ -607,7 +699,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                                 onClick={() => isSelectable && handleSelectMedia(media)}
                                                 className={`
                                                     relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer flex flex-col bg-white
-                                                    ${isSelected ? 'border-primary ring-2 ring-primary/30 shadow-md' : 'border-transparent hover:border-slate-300 shadow-sm'}
+                                                    ${(isInteractiveMediaModalOpen ? selectedInteractiveMedia?.id === media.id : selectedMedia?.id === media.id) ? 'border-primary ring-2 ring-primary/30 shadow-md' : 'border-transparent hover:border-slate-300 shadow-sm'}
                                                     ${!isSelectable ? 'opacity-40 cursor-not-allowed grayscale-[50%]' : 'hover:shadow-md'}
                                                 `}
                                             >
@@ -637,7 +729,7 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                                                         <p className="text-[9px] text-red-500 font-bold mt-1 uppercase">Formato incorrecto</p>
                                                     )}
                                                 </div>
-                                                {isSelected && (
+                                                {(isInteractiveMediaModalOpen ? selectedInteractiveMedia?.id === media.id : selectedMedia?.id === media.id) && (
                                                     <div className="absolute top-2 right-2 bg-primary rounded-full p-1 text-white shadow-sm">
                                                         <CheckCircle2 className="w-4 h-4" />
                                                     </div>
