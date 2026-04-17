@@ -683,9 +683,8 @@ export default function ConfigForm({ forceGroupId, isSchedule = false, configToE
                             ) : (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                     {mediaList.map((media) => {
-                                        const videoFile = isVideo(media.file);
+                                         const videoFile = isVideo(media.file);
                                         const htmlFile = isHtml(media.file);
-                                        const isSelected = selectedMedia?.id === media.id;
                                         // Validate file type based on selected content_type
                                         const isSelectable =
                                             isInteractiveMediaModalOpen ? !videoFile && !htmlFile :

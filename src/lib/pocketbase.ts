@@ -87,6 +87,7 @@ export interface PWAConfig {
     content_type: 'video_interactive' | 'video_only' | 'image_only' | 'web_only' | 'playlist' | 'url_only' | 'html_only';
     media?: string;
     playlist?: string;
+    interactive_image?: string;
     redirect_url: string;
     name_schedule?: string;
     is_schedule?: boolean;
@@ -99,6 +100,7 @@ export interface PWAConfig {
     expand?: {
         media?: Media;
         playlist?: Playlist;
+        interactive_image?: Media;
     };
 }
 
