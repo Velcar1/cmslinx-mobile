@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Trash2, List, Image as ImageIcon, Video, ArrowUp, ArrowDown, X, Pencil } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Loader2, Plus, Trash2, List, Image as ImageIcon, Video, ArrowUp, ArrowDown, X, Pencil, FolderOpen } from 'lucide-react';
 import { pb, type Playlist, type PlaylistItem, type Media } from '../lib/pocketbase';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 export default function PlaylistManagement() {
     const { t, language } = useLanguage();
+    const navigate = useNavigate();
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
     const [items, setItems] = useState<PlaylistItem[]>([]);
@@ -514,36 +516,59 @@ export default function PlaylistManagement() {
                         </div>
 
                         <div className="p-8 overflow-y-auto flex-1 bg-slate-50/50">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                                {availableMedia.map((media) => {
-                                    const videoFile = isVideo(media.file);
-                                    return (
-                                        <div
-                                            key={media.id}
-                                            onClick={() => handleAddItem(media)}
-                                            className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 transition-all cursor-pointer flex flex-col"
-                                        >
-                                            <div className="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center">
-                                                {videoFile ? (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-                                                        <Video className="w-10 h-10 text-white/50" />
-                                                    </div>
-                                                ) : (
-                                                    <img src={pb.files.getURL(media, media.file, { thumb: '300x300' })} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                                )}
-                                                <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all flex items-center justify-center">
-                                                    <div className="bg-white p-2.5 rounded-2xl text-primary shadow-xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300">
-                                                        <Plus className="w-6 h-6" />
+                            {availableMedia.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-20 text-center">
+                                    <div className="bg-slate-100 p-8 rounded-3xl mb-6">
+                                        <FolderOpen className="w-16 h-16 text-slate-300" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-slate-800 mb-2">
+                                        {language === 'es' ? 'Galería vacía' : 'Empty gallery'}
+                                    </h4>
+                                    <p className="text-slate-500 max-w-xs mb-8 leading-relaxed">
+                                        {language === 'es'
+                                            ? 'No tienes archivos multimedia aún. Sube imágenes o videos en la sección Multimedios para poder añadirlos a tu playlist.'
+                                            : 'You have no media files yet. Upload images or videos in the Media section to add them to your playlist.'}
+                                    </p>
+                                    <button
+                                        onClick={() => { setIsMediaModalOpen(false); navigate('/media'); }}
+                                        className="btn-primary flex items-center gap-2"
+                                    >
+                                        <ImageIcon className="w-5 h-5" />
+                                        {language === 'es' ? 'Ir a Multimedios' : 'Go to Media'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                                    {availableMedia.map((media) => {
+                                        const videoFile = isVideo(media.file);
+                                        return (
+                                            <div
+                                                key={media.id}
+                                                onClick={() => handleAddItem(media)}
+                                                className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 transition-all cursor-pointer flex flex-col"
+                                            >
+                                                <div className="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center">
+                                                    {videoFile ? (
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
+                                                            <Video className="w-10 h-10 text-white/50" />
+                                                        </div>
+                                                    ) : (
+                                                        <img src={pb.files.getURL(media, media.file, { thumb: '300x300' })} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                    )}
+                                                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all flex items-center justify-center">
+                                                        <div className="bg-white p-2.5 rounded-2xl text-primary shadow-xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300">
+                                                            <Plus className="w-6 h-6" />
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div className="p-4 border-t border-slate-50">
+                                                    <p className="text-xs font-bold text-slate-700 truncate" title={media.name}>{media.name}</p>
+                                                </div>
                                             </div>
-                                            <div className="p-4 border-t border-slate-50">
-                                                <p className="text-xs font-bold text-slate-700 truncate" title={media.name}>{media.name}</p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
